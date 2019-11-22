@@ -7,5 +7,18 @@
     "url": "https://github.com/jbedard/insert-assets.git"
   },
   "author": "Jason Bedard",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "./src/main.js",
+  "bin": {
+    "html-insert-assets": "./src/main.js"
+  },
+  "scripts": {
+    "test": "jasmine test/*.js"
+  },
+  "dependencies": {
+    "parse5": "^5.1.1"
+  },
+  "devDependencies": {
+    "jasmine": "^3.5.0"
+  }
 }
