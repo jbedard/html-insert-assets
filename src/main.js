@@ -20,20 +20,52 @@ function findElementByName(d, name) {
   return undefined;
 }
 
-function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestamp = Date.now) {
-  const outputFile = params.shift();
-  const inputFile = params.shift();
-  const rootDirs = [];
-  while (params.length && params[0] !== '--assets') {
-    let r = params.shift();
-    if (!r.endsWith('/')) {
-      r += '/';
-    }
-    rootDirs.push(r);
+function readVarArgs(params, i) {
+  const args = [];
+  while (i < params.length && !params[i].startsWith("--")) {
+    args.push(params[i++]);
   }
-  // Always trim the longest prefix
+  return [args, i - 1];
+}
+
+function parseArgs(params) {
+  let inputFile;
+  let outputFile;
+  let assets = [];
+  let rootDirs = [];
+
+  for (let i = 0; i < params.length; i++) {
+    switch (params[i]) {
+      case "--assets":
+        [assets, i] = readVarArgs(params, i+1);
+        break;
+
+      case "--roots":
+        [rootDirs, i] = readVarArgs(params, i+1);
+        break;
+
+      case "--out":
+        outputFile = params[++i];
+        break;
+
+      case "--html":
+        inputFile = params[++i];
+        break;
+
+      default:
+        throw Error(`Unknown arg: ${params[i]}`);
+    }
+  }
+
+  // Make dir '/'s consistent. Always trim the longest prefix
+  rootDirs = rootDirs.map(r => r.endsWith('/') ? r : r + '/');
   rootDirs.sort((a, b) => b.length - a.length);
-  params.shift(); // --assets
+
+  return {inputFile, outputFile, assets, rootDirs};
+}
+
+function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestamp = Date.now) {
+  const {inputFile, outputFile, assets, rootDirs} = parseArgs(params);
 
   const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
 
@@ -62,7 +94,7 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
     return execPath;
   }
 
-  const jsFiles = params.filter(s => /\.m?js$/i.test(s));
+  const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
   for (const s of jsFiles) {
     // Differential loading: for filenames like
     //  foo.mjs
@@ -118,6 +150,5 @@ module.exports = {main};
 if (require.main === module) {
   // We always require the arguments are encoded into a flagfile
   // so that we don't exhaust the command-line limit.
-  const params = fs.readFileSync(process.argv[2], {encoding: 'utf-8'}).split('\n').filter(l => !!l);
-  process.exitCode = main(params);
+  process.exitCode = main(process.argv.slice(2));
 }

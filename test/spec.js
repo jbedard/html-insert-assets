@@ -14,18 +14,18 @@ describe('HTML inserter', () => {
   }
 
   it('should do be a no-op', () => {
-    expect(inserter.main([outFile, inFile], read, write)).toBe(0);
+    expect(inserter.main(["--out", outFile, "--html", inFile,], read, write)).toBe(0);
     expect(output).toBe('<html><head></head><body></body></html>');
   });
 
   it('should inject script tag', () => {
-    expect(inserter.main([outFile, inFile, '--assets', 'path/to/my.js'], read, write, () => 123)).toBe(0);
+    expect(inserter.main(["--out", outFile, "--html", inFile, '--assets', 'path/to/my.js'], read, write, () => 123)).toBe(0);
     expect(output).toBe(
         '<html><head></head><body><script src="/path/to/my.js?v=123"></script></body></html>');
   });
 
   it('should allow the "module js" extension', () => {
-    expect(inserter.main([outFile, inFile, '--assets', 'path/to/my.mjs'], read, write, () => 123))
+    expect(inserter.main(["--out", outFile, "--html", inFile, '--assets', 'path/to/my.mjs'], read, write, () => 123))
         .toBe(0);
     expect(output).toBe(
         '<html><head></head><body><script type="module" src="/path/to/my.mjs?v=123"></script></body></html>');
@@ -33,23 +33,23 @@ describe('HTML inserter', () => {
 
   it('should allow the ".es2015.js" extension', () => {
     expect(inserter.main(
-               [outFile, inFile, '--assets', 'path/to/my.es2015.js'], read, write, () => 123))
+               ["--out", outFile, "--html", inFile, '--assets', 'path/to/my.es2015.js'], read, write, () => 123))
         .toBe(0);
     expect(output).toBe(
         '<html><head></head><body><script type="module" src="/path/to/my.es2015.js?v=123"></script></body></html>');
   });
 
   it('should strip longest prefix', () => {
-    expect(inserter.main([outFile, inFile, 
-      'path', 'path/to',
+    expect(inserter.main(["--out", outFile, "--html", inFile,
+      "--roots", 'path', 'path/to',
       '--assets', 'path/to/my.js'], read, write, () => 123)).toBe(0);
     expect(output).toBe(
         '<html><head></head><body><script src="/my.js?v=123"></script></body></html>');
   });
 
   it('should strip external workspaces', () => {
-    expect(inserter.main([outFile, inFile, 
-      'npm/node_modules/zone.js/dist',
+    expect(inserter.main(["--out", outFile, "--html", inFile,
+      "--roots", 'npm/node_modules/zone.js/dist',
       '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, () => 123)).toBe(0);
     expect(output).toBe(
         '<html><head></head><body><script src="/zone.min.js?v=123"></script></body></html>');
@@ -57,14 +57,14 @@ describe('HTML inserter', () => {
   });
 
   it('should inject link tag', () => {
-    expect(inserter.main([outFile, inFile, '--assets', 'path/to/my.css'], read, write, () => 123)).toBe(0);
+    expect(inserter.main(["--out", outFile, "--html", inFile, '--assets', 'path/to/my.css'], read, write, () => 123)).toBe(0);
     expect(output).toBe(
         '<html><head><link rel="stylesheet" href="/path/to/my.css?v=123"></head><body></body></html>');
   });
 
   it('should create a pair of script tags for differential loading', () => {
     expect(inserter.main(
-               [outFile, inFile, '--assets', 'path/to/my.js', 'path/to/my.es2015.js'], read, write,
+               ["--out", outFile, "--html", inFile, '--assets', 'path/to/my.js', 'path/to/my.es2015.js'], read, write,
                () => 123))
         .toBe(0);
     expect(output).toBe(
