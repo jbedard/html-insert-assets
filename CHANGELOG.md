@@ -1,3 +1,12 @@
+# [0.2.0](https://github.com/jbedard/insert-assets/compare/v0.1.0...v0.2.0) (2019-11-26)
+
+
+### Features
+
+* include output directory as default root dir ([31226ae](https://github.com/jbedard/insert-assets/commit/31226ae3f03677482aea184ed004b5d2f0805856))
+
+
+
 # 0.1.0 (2019-11-23)
 
 
