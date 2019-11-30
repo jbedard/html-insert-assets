@@ -3,7 +3,6 @@
 const parse5 = require('parse5');
 const treeAdapter = require('parse5/lib/tree-adapters/default');
 const fs = require('fs');
-const path = require('path');
 
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
@@ -68,7 +67,6 @@ function parseArgs(cmdParams) {
   }
 
   // Make dir '/'s consistent. Always trim the longest prefix
-  rootDirs.push(path.dirname(outputFile));
   rootDirs = rootDirs.map(r => r.endsWith('/') ? r : r + '/');
   rootDirs.sort((a, b) => b.length - a.length);
 

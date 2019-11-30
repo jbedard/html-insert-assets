@@ -45,13 +45,6 @@ describe('HTML inserter', () => {
         '<html><head></head><body><script type="module" src="/path/to/my.es2015.js?v=123"></script></body></html>');
   });
 
-  it('should include --out file dir as a default --root', () => {
-    expect(main(["--out", outFile, "--html", inFile,
-      '--assets', 'out/some/file.js'], read, write, () => 123)).toBe(0);
-    expect(output).toBe(
-        '<html><head></head><body><script src="/file.js?v=123"></script></body></html>');
-  });
-
   it('should strip the longest matching prefix', () => {
     expect(main(["--out", outFile, "--html", inFile,
       "--roots", 'path', 'path/to',
