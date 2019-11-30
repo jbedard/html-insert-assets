@@ -3,6 +3,7 @@
 const parse5 = require('parse5');
 const treeAdapter = require('parse5/lib/tree-adapters/default');
 const fs = require('fs');
+const path = require('path');
 
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
@@ -18,6 +19,29 @@ function findElementByName(d, name) {
     if (result) return result;
   }
   return undefined;
+}
+
+function normalizePath(p) {
+  p = path.normalize(p);
+  if (p[0] !== '/' && p[0] !== '.') {
+    p = `./${p}`;
+  }
+  return p;
+}
+
+function normalizeDirPath(d) {
+  d = normalizePath(d);
+  if (!d.endsWith('/')) {
+    d = d + '/';
+  }
+  return d;
+}
+
+function removeExternal(p) {
+  if (p.startsWith('./external/')) {
+    p = normalizePath( p.substring('./external/'.length) );
+  }
+  return p;
 }
 
 function readVarArgs(params, i) {
@@ -66,8 +90,13 @@ function parseArgs(cmdParams) {
     }
   }
 
-  // Make dir '/'s consistent. Always trim the longest prefix
-  rootDirs = rootDirs.map(r => r.endsWith('/') ? r : r + '/');
+  // Normalize paths
+  assets = assets.map(normalizePath);
+  rootDirs = rootDirs.map(normalizeDirPath);
+  inputFile = inputFile && normalizePath(inputFile);
+  outputFile = outputFile && normalizePath(outputFile);
+
+  // Always trim the longest root first
   rootDirs.sort((a, b) => b.length - a.length);
 
   return {inputFile, outputFile, assets, rootDirs};
@@ -91,18 +120,42 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
     throw ('No <head> tag found in HTML document');
   }
 
-  /**
-   * Trims the longest prefix from the path
-   */
-  function relative(execPath) {
-    if (execPath.startsWith('external/')) {
-      execPath = execPath.substring('external/'.length);
-    }
+  function removeRootPath(p) {
     for (const r of rootDirs) {
-      if (execPath.startsWith(r)) {
-        return execPath.substring(r.length);
+      if (p.startsWith(r)) {
+        return '/' + p.substring(r.length);
       }
     }
+    return p;
+  }
+
+  const outputDir = normalizeDirPath(path.dirname(outputFile));
+  const rootedOutputDir = removeRootPath(outputDir).replace(/^\//, "./");
+  function relativeToHtml(p) {
+    // Ignore absolute
+    if (p.startsWith("/")) {
+      return p;
+    }
+
+    return path.relative(rootedOutputDir, p);
+  }
+
+  /**
+   * Converts an inputed path to a URL based on:
+   * - root paths
+   * - output file path (urls are relative to this)
+   * - /external/ prefix
+   * - standard path normalization
+   */
+  function toUrl(origPath) {
+    let execPath = origPath;
+
+    execPath = removeExternal(execPath);
+    execPath = removeRootPath(execPath);
+    execPath = relativeToHtml(execPath);
+    execPath = normalizePath(execPath);
+    execPath = `${execPath}?v=${timestamp(origPath)}`;
+
     return execPath;
   }
 
@@ -115,7 +168,7 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
     if (/\.(es2015\.|m)js$/i.test(s)) {
       const moduleScript = treeAdapter.createElement('script', undefined, [
         {name: 'type', value: 'module'},
-        {name: 'src', value: `/${relative(s)}?v=${timestamp()}`},
+        {name: 'src', value: toUrl(s)},
       ]);
       treeAdapter.appendChild(body, moduleScript);
     } else {
@@ -137,7 +190,7 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
       const nomodule = hasMatchingModule(s, jsFiles) ? [{name: 'nomodule', value: ''}] : [];
 
       const noModuleScript = treeAdapter.createElement('script', undefined, nomodule.concat([
-        {name: 'src', value: `/${relative(s)}?v=${timestamp()}`},
+        {name: 'src', value: toUrl(s)},
       ]));
       treeAdapter.appendChild(body, noModuleScript);
     }
@@ -146,7 +199,7 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
   for (const s of cssFiles) {
     const stylesheet = treeAdapter.createElement('link', undefined, [
       {name: 'rel', value: 'stylesheet'},
-      {name: 'href', value: `/${relative(s)}?v=${timestamp()}`},
+      {name: 'href', value: toUrl(s)},
     ]);
     treeAdapter.appendChild(head, stylesheet);
   }
