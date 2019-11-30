@@ -1,7 +1,5 @@
 const {main, parseArgs} = require('../src/main');
 
-console.log("parseArgs", parseArgs);
-
 describe('HTML inserter', () => {
   const inFile = 'data/some/index.html';
   const outFile = 'out/some/index.html';
@@ -176,4 +174,17 @@ describe('parseArgs', () => {
     expect(rootDirs).toEqual(["/c/", "/d/", "./"]);
   });
 
+  it('should allow `--param=a b` in addition to `--param a b', () => {
+    const {outputFile, inputFile, assets, rootDirs} = parseArgs([
+      "--out=./out",
+      "--html=./in",
+      "--assets=./a", "./b",
+      "--roots=/c/", "/d/"
+    ]);
+
+    expect(outputFile).toBe("./out");
+    expect(inputFile).toBe("./in");
+    expect(assets).toEqual(["./a", "./b"]);
+    expect(rootDirs).toEqual(["/c/", "/d/", "./"]);
+  });
 });

@@ -29,11 +29,20 @@ function readVarArgs(params, i) {
   return [args, i - 1];
 }
 
-function parseArgs(params) {
+function parseArgs(cmdParams) {
   let inputFile;
   let outputFile;
   let assets = [];
   let rootDirs = [];
+
+  const params = cmdParams.reduce((a, p) => {
+    if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
+      a.push( ... p.split('=', 2));
+    } else {
+      a.push(p);
+    }
+    return a;
+  }, []);
 
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
