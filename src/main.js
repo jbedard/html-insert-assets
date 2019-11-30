@@ -147,7 +147,10 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
   return 0;
 }
 
-module.exports = {main};
+module.exports = {
+  parseArgs,
+  main
+};
 
 if (require.main === module) {
   // We always require the arguments are encoded into a flagfile
