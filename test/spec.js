@@ -24,6 +24,12 @@ describe('HTML inserter', () => {
         '<html><head></head><body><script src="/path/to/my.js?v=123"></script></body></html>');
   });
 
+  it('should inject .js as script tag when --assets= is used', () => {
+    expect(main(["--out", outFile, "--html", inFile, '--assets=path/to/my.js'], read, write, () => 123)).toBe(0);
+    expect(output).toBe(
+        '<html><head></head><body><script src="/path/to/my.js?v=123"></script></body></html>');
+  });
+
   it('should assume "module js" .mjs extension is type="module"', () => {
     expect(main(["--out", outFile, "--html", inFile, '--assets', 'path/to/my.mjs'], read, write, () => 123))
         .toBe(0);
@@ -65,6 +71,20 @@ describe('HTML inserter', () => {
 
   it('should inject .css files as stylesheet link tags', () => {
     expect(main(["--out", outFile, "--html", inFile, '--assets', 'path/to/my.css'], read, write, () => 123)).toBe(0);
+    expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="/path/to/my.css?v=123"></head><body></body></html>');
+  });
+
+  it('should strip the longest matching prefix for .css files', () => {
+    expect(main(["--out", outFile, "--html", inFile,
+      "--roots", 'path', 'path/to',
+      '--assets', 'path/to/my.css'], read, write, () => 123)).toBe(0);
+    expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="/my.css?v=123"></head><body></body></html>');
+  });
+
+  it('should inject .css files when --assets= is used', () => {
+    expect(main(["--out", outFile, "--html", inFile, '--assets=path/to/my.css'], read, write, () => 123)).toBe(0);
     expect(output).toBe(
         '<html><head><link rel="stylesheet" href="/path/to/my.css?v=123"></head><body></body></html>');
   });

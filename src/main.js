@@ -78,6 +78,9 @@ function parseArgs(cmdParams) {
 function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestamp = Date.now) {
   const {inputFile, outputFile, assets, rootDirs} = parseArgs(params);
 
+  const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
+  const cssFiles = assets.filter(s => /\.css$/.test(s));
+
   const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
 
   const body = findElementByName(document, 'body');
@@ -105,7 +108,6 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
     return execPath;
   }
 
-  const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
   for (const s of jsFiles) {
     // Differential loading: for filenames like
     //  foo.mjs
@@ -143,7 +145,7 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
     }
   }
 
-  for (const s of params.filter(s => /\.css$/.test(s))) {
+  for (const s of cssFiles) {
     const stylesheet = treeAdapter.createElement('link', undefined, [
       {name: 'rel', value: 'stylesheet'},
       {name: 'href', value: `/${relative(s)}?v=${timestamp()}`},
