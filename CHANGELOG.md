@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/jbedard/insert-assets/compare/v0.2.0...v0.3.0) (2019-11-30)
+
+
+### Features
+
+* allow cli args of form `--arg=a` in addition to `--arg a` ([00a2524](https://github.com/jbedard/insert-assets/commit/00a2524d424a00106de45a11fef15e9accdcbd0c)), closes [#1](https://github.com/jbedard/insert-assets/issues/1)
+
+
+
 # [0.2.0](https://github.com/jbedard/insert-assets/compare/v0.1.0...v0.2.0) (2019-11-26)
 
 
