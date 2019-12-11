@@ -4,6 +4,7 @@ const parse5 = require('parse5');
 const treeAdapter = require('parse5/lib/tree-adapters/default');
 const fs = require('fs');
 const path = require('path');
+const mkdirp = require('mkdirp');
 
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
@@ -106,7 +107,12 @@ function parseArgs(cmdParams) {
   return {inputFile, outputFile, assets, rootDirs};
 }
 
-function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestamp = Date.now) {
+function mkdirpWrite(filePath, value) {
+  mkdirp.sync(path.dirname(filePath));
+  fs.writeFileSync(filePath, value);
+}
+
+function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = Date.now) {
   const {inputFile, outputFile, assets, rootDirs} = parseArgs(params);
 
   const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
