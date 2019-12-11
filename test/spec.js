@@ -159,26 +159,30 @@ describe("modules", () => {
 });
 
 describe('parseArgs', () => {
-  const REQUIRE_PARAMS = ["--out", "./foo"];
+  const REQUIRE_PARAMS = ["--out", "foo.html", "--html", "in.html"];
 
-  it('should accept a single --out', () => {
-    const {outputFile} = parseArgs(["--out", "./foo"]);
+  it('should accept a single --out and --html', () => {
+    const {outputFile, inputFile} = parseArgs(["--out", "./foo.html", "--html", "index.html"]);
 
-    expect(outputFile).toBe("./foo");
+    expect(outputFile).toBe("./foo.html");
+    expect(inputFile).toBe("./index.html");
   });
 
   it('should throw with multiple --out', () => {
-    expect(() => parseArgs(["--out", "./foo", "./bar"])).toThrow();
-  });
-
-  it('should accept a single --html', () => {
-    const {inputFile} = parseArgs([...REQUIRE_PARAMS, "--html", "./foo"]);
-
-    expect(inputFile).toBe("./foo");
+    expect(() => parseArgs(["--html", "validhtml", "--out", "./foo", "./bar"])).toThrowError("Unknown arg: ./bar");
   });
 
   it('should throw with multiple --html', () => {
-    expect(() => parseArgs([...REQUIRE_PARAMS, "--html", "./foo", "./bar"])).toThrow();
+    expect(() => parseArgs(["--out", "foo", , "--html", "./foo", "./bar"])).toThrowError("Unknown arg: ./bar");
+  });
+
+  it('should throw with unknown arg', () => {
+    expect(() => parseArgs(["--badparam"])).toThrowError("Unknown arg: --badparam");
+  });
+
+  it('should throw with no --out and --html', () => {
+    expect(() => parseArgs(["--out", "out"])).toThrowError("required: --html, --out");
+    expect(() => parseArgs(["--html", "in"])).toThrowError("required: --html, --out");
   });
 
   it('should accept multiple assets', () => {

@@ -90,6 +90,10 @@ function parseArgs(cmdParams) {
     }
   }
 
+  if (!inputFile || !outputFile) {
+    throw new Error("required: --html, --out");
+  }
+
   // Normalize paths
   assets = assets.map(normalizePath);
   rootDirs = rootDirs.map(normalizeDirPath);
@@ -112,12 +116,12 @@ function main(params, read = fs.readFileSync, write = fs.writeFileSync, timestam
 
   const body = findElementByName(document, 'body');
   if (!body) {
-    throw ('No <body> tag found in HTML document');
+    throw new Error('No <body> tag found in HTML document');
   }
 
   const head = findElementByName(document, 'head');
   if (!head) {
-    throw ('No <head> tag found in HTML document');
+    throw new Error('No <head> tag found in HTML document');
   }
 
   function removeRootPath(p) {
