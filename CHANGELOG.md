@@ -1,3 +1,13 @@
+## [0.4.1](https://github.com/jbedard/insert-assets/compare/v0.4.0...v0.4.1) (2019-12-11)
+
+
+### Bug Fixes
+
+* fix case where --out file is in a non-existing directory ([9caa413](https://github.com/jbedard/insert-assets/commit/9caa413aa83d2aa4ef9523fe026fff4103e3b935))
+* throw when no html/out file specified ([9e0bb0b](https://github.com/jbedard/insert-assets/commit/9e0bb0bae880dfe791ca86a55f969c6f2b4d87a8))
+
+
+
 # [0.4.0](https://github.com/jbedard/insert-assets/compare/v0.3.0...v0.4.0) (2019-12-01)
 
 
