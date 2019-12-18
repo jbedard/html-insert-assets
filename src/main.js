@@ -193,7 +193,7 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
 
     const stamp = timestamp(origPath);
 
-    log("stamp: %s", stamp);
+    log("stamp: %s @ %s", execPath, stamp);
 
     return `${execPath}?v=${stamp}`;
   }
