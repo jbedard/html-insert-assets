@@ -1,3 +1,12 @@
+## [0.4.2](https://github.com/jbedard/insert-assets/compare/v0.4.1...v0.4.2) (2019-12-18)
+
+
+### Features
+
+* add --verbose option for logging info ([4810851](https://github.com/jbedard/insert-assets/commit/4810851147430166bd19bafc5ab7b226cf7e5ccc))
+
+
+
 ## [0.4.1](https://github.com/jbedard/insert-assets/compare/v0.4.0...v0.4.1) (2019-12-11)
 
 
