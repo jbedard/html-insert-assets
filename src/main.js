@@ -58,6 +58,7 @@ function parseArgs(cmdParams) {
   let outputFile;
   let assets = [];
   let rootDirs = [];
+  let verbose = false;
 
   const params = cmdParams.reduce((a, p) => {
     if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
@@ -86,6 +87,10 @@ function parseArgs(cmdParams) {
         inputFile = params[++i];
         break;
 
+      case "--verbose":
+        verbose = true;
+        break;
+
       default:
         throw Error(`Unknown arg: ${params[i]}`);
     }
@@ -104,7 +109,17 @@ function parseArgs(cmdParams) {
   // Always trim the longest root first
   rootDirs.sort((a, b) => b.length - a.length);
 
-  return {inputFile, outputFile, assets, rootDirs};
+  return {inputFile, outputFile, assets, rootDirs, verbose};
+}
+
+function createLogger(verbose) {
+  if (!verbose) {
+    return () => {};
+  }
+
+  return function logger(str, ...args) {
+    console.log("html-insert-assets: " + str, ...args);
+  };
 }
 
 function mkdirpWrite(filePath, value) {
@@ -113,10 +128,17 @@ function mkdirpWrite(filePath, value) {
 }
 
 function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = Date.now) {
-  const {inputFile, outputFile, assets, rootDirs} = parseArgs(params);
+  const {inputFile, outputFile, assets, rootDirs, verbose} = parseArgs(params);
+  const log = createLogger(verbose);
 
   const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
   const cssFiles = assets.filter(s => /\.css$/.test(s));
+
+  log("in: %s", inputFile);
+  log("out: %s", outputFile);
+  log("roots: %s", rootDirs);
+  log("files (js): %s", jsFiles);
+  log("files (css): %s", cssFiles);
 
   const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
 
@@ -164,9 +186,16 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
     execPath = removeRootPath(execPath);
     execPath = relativeToHtml(execPath);
     execPath = normalizePath(execPath);
-    execPath = `${execPath}?v=${timestamp(origPath)}`;
 
-    return execPath;
+    if (execPath !== origPath) {
+      log("reduce: %s => %s", origPath, execPath);
+    }
+
+    const stamp = timestamp(origPath);
+
+    log("stamp: %s", stamp);
+
+    return `${execPath}?v=${stamp}`;
   }
 
   for (const s of jsFiles) {
