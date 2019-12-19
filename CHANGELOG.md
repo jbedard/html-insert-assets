@@ -1,3 +1,12 @@
+## [0.4.3](https://github.com/jbedard/insert-assets/compare/v0.4.2...v0.4.3) (2019-12-19)
+
+
+### Bug Fixes
+
+* **verbose:** add context to the stamp verbose log statement ([fd22d90](https://github.com/jbedard/insert-assets/commit/fd22d9078ff10fa42613f2ff735c4a6e5f0a7125))
+
+
+
 ## [0.4.2](https://github.com/jbedard/insert-assets/compare/v0.4.1...v0.4.2) (2019-12-18)
 
 
