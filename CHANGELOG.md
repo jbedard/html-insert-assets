@@ -26,11 +26,6 @@
 * **css:** fix css file paths when using --assets= style args ([6674db7](https://github.com/jbedard/insert-assets/commit/6674db7317634ecef4b053b5d56d30df4b06d1a4)), closes [#3](https://github.com/jbedard/insert-assets/issues/3)
 
 
-### Features
-
-* allow cli args of form `--arg=a` in addition to `--arg a` ([00a2524](https://github.com/jbedard/insert-assets/commit/00a2524d424a00106de45a11fef15e9accdcbd0c)), closes [#1](https://github.com/jbedard/insert-assets/issues/1)
-
-
 ### Reverts
 
 * Revert "feat(*): include output directory as default root dir" ([4aac05b](https://github.com/jbedard/insert-assets/commit/4aac05b96338c4bd3f8feadabb42a77725b78519))
