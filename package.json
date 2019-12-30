@@ -4,7 +4,7 @@
   "description": "Insert assets such as .js, .css into an HTML file.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jbedard/insert-assets.git"
+    "url": "https://github.com/jbedard/html-insert-assets.git"
   },
   "author": "Jason Bedard",
   "license": "MIT",
