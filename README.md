@@ -39,7 +39,7 @@ html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --root .
-    --assets --assets ./a.js b.js sub/c.js
+    --assets ./a.js b.js sub/c.js
 ```
 will insert:
 ```html
@@ -54,7 +54,7 @@ html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --root sub /abs/path
-    --assets --assets /abs/path/a.js b.js sub/c.js
+    --assets /abs/path/a.js b.js sub/c.js
 ```
 will insert:
 ```html
