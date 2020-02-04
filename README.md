@@ -3,6 +3,7 @@ Insert assets such as .js, .css into an HTML file.
 
 * .js files inserted at end of <body>
 * .css files inserted at end of <head>
+* .ico file inserted at end of <head>
 
 ## Examples
 

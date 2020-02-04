@@ -133,6 +133,7 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
 
   const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
   const cssFiles = assets.filter(s => /\.css$/.test(s));
+  const icoFile = assets.filter(s => /\.ico$/.test(s))[0];
 
   log("in: %s", inputFile);
   log("out: %s", outputFile);
@@ -241,6 +242,15 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
       {name: 'href', value: toUrl(s)},
     ]);
     treeAdapter.appendChild(head, stylesheet);
+  }
+
+  if (icoFile) {
+    const icoLink = treeAdapter.createElement('link', undefined, [
+      {name: 'rel', value: 'shortcut icon'},
+      {name: 'type', value: 'image/ico'},
+      {name: 'href', value: toUrl(icoFile)},
+    ]);
+    treeAdapter.appendChild(head, icoLink);
   }
 
   const content = parse5.serialize(document, {treeAdapter});

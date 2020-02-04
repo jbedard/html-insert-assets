@@ -130,6 +130,20 @@ describe('HTML inserter', () => {
     expect(output).toBe(
         '<html><head><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>');
   });
+
+  it('should inject .ico files as shortcut/icon link tags', () => {
+    expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.ico'], read, write, stamper)).toBe(0);
+    expect(output).toBe(
+        '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico?v=123"></head><body></body></html>');
+  });
+
+  it('should strip the longest matching prefix for .ico files', () => {
+    expect(main(["--out", "index.html", "--html", inFile,
+      "--roots", 'path', 'path/to',
+      '--assets', 'path/to/my.ico'], read, write, stamper)).toBe(0);
+    expect(output).toBe(
+        '<html><head><link rel="shortcut icon" type="image/ico" href="/my.ico?v=123"></head><body></body></html>');
+  });
 });
 
 describe("modules", () => {
