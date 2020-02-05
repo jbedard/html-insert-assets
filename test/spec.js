@@ -1,9 +1,10 @@
+const path = require('path');
 const {main, parseArgs} = require('../src/main');
 
-const inFile = './data/some/index.html';
+const inFile = path.normalize('./data/some/index.html');
 
 function read(file) {
-  if (file === inFile) return `<html><head></head><body></body></html>`;
+  if (path.normalize(file) === inFile) return `<html><head></head><body></body></html>`;
   throw new Error(`no content for ${file}`);
 }
 
@@ -108,7 +109,17 @@ describe('HTML inserter', () => {
       "--roots", 'npm/node_modules/zone.js/dist',
       '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, stamper)).toBe(0);
     expect(output).toBe(scriptHtml('/zone.min.js'));
-    
+  });
+
+  it('should strip the external workspaces prefix in Windows', () => {
+    if (path.win32.normalize !== path.normalize) {
+      spyOn(path, 'normalize').and.callFake(path.win32.normalize);
+    }
+
+    expect(main(["--out", "index.html", "--html", inFile,
+      "--roots", 'npm/node_modules/zone.js/dist',
+      '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, stamper)).toBe(0);
+    expect(output).toBe(scriptHtml('/zone.min.js'));
   });
 
   it('should inject .css files as stylesheet link tags', () => {
