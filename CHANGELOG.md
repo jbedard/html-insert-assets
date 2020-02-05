@@ -1,3 +1,17 @@
+# [0.5.0](https://github.com/jbedard/html-insert-assets/compare/v0.4.3...v0.5.0) (2020-02-05)
+
+
+### Bug Fixes
+
+* support Windows paths ([#6](https://github.com/jbedard/html-insert-assets/issues/6)) ([ecf283c](https://github.com/jbedard/html-insert-assets/commit/ecf283c49e300316c281b9a30a38e6ed027b8ad9))
+
+
+### Features
+
+* add support for inserting a *.ico file as a shortcut icon ([1ad2017](https://github.com/jbedard/html-insert-assets/commit/1ad2017fd7cad5c3fdab12cd3e52fb44b023d098))
+
+
+
 ## [0.4.3](https://github.com/jbedard/insert-assets/compare/v0.4.2...v0.4.3) (2019-12-19)
 
 
