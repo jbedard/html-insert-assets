@@ -24,6 +24,8 @@ function findElementByName(d, name) {
 
 function normalizePath(p) {
   p = path.normalize(p);
+  // Convert paths to posix
+  p = p.replace(/\\/g, '/');
   if (p[0] !== '/' && p[0] !== '.') {
     p = `./${p}`;
   }
@@ -166,7 +168,7 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   const rootedOutputDir = removeRootPath(outputDir).replace(/^\//, "./");
   function relativeToHtml(p) {
     // Ignore absolute
-    if (p.startsWith("/")) {
+    if (path.isAbsolute(p)) {
       return p;
     }
 
