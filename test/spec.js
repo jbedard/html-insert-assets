@@ -4,8 +4,8 @@ const {main, parseArgs} = require('../src/main');
 const inFile = path.normalize('./data/some/index.html');
 
 function read(file) {
-  if (path.normalize(file) === inFile) return `<html><head></head><body></body></html>`;
-  throw new Error(`no content for ${file}`);
+  if (path.normalize(file) === path.normalize(inFile)) return `<html><head></head><body></body></html>`;
+  throw new Error(`no content for ${file}: ${path.normalize(file)}`);
 }
 
 let output;
@@ -54,12 +54,12 @@ describe('HTML inserter', () => {
 
   it('should inject relative .js as script with absolute path when --roots .', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', '.'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/path/to/my.js'));
+    expect(output).toBe(scriptHtml('./path/to/my.js'));
   });
 
   it('should inject relative .js as script with absolute path when output subdir and --roots .', () => {
     expect(main(["--out", "sub/index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', '.'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/path/to/my.js'));
+    expect(output).toBe(scriptHtml('../path/to/my.js'));
   });
 
   it('should inject relative .js as script with path relative with absolute --out also as a root', () => {
@@ -74,41 +74,41 @@ describe('HTML inserter', () => {
 
   it('should inject relative .js as script tag with absolute path to root dir (same dir)', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', '.'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/path/to/my.js'));
+    expect(output).toBe(scriptHtml('./path/to/my.js'));
   });
 
   it('should inject relative .js as script tag with absolute path to relative root dir', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', './path/'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/to/my.js'));
+    expect(output).toBe(scriptHtml('./to/my.js'));
   });
 
   it('should inject relative .js as script tag with absolute path to relative root dir (no prefix)', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', 'path/'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/to/my.js'));
+    expect(output).toBe(scriptHtml('./to/my.js'));
   });
 
   it('should inject relative .js as script tag with absolute path to relative root dir (no trailing slash)', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', 'path/to/my.js', '--roots', './path'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/to/my.js'));
+    expect(output).toBe(scriptHtml('./to/my.js'));
   });
 
   it('should inject absolute .js as script tag with absolute path to absolute root dir', () => {
     expect(main(["--out", "index.html", "--html", inFile, '--assets', '/path/to/my.js', '--roots', '/path/'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/to/my.js'));
+    expect(output).toBe(scriptHtml('./to/my.js'));
   });
 
   it('should strip the longest matching root prefix', () => {
     expect(main(["--out", "index.html", "--html", inFile,
       "--roots", 'path', 'path/to',
       '--assets', 'path/to/my.js'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/my.js'));
+    expect(output).toBe(scriptHtml('./my.js'));
   });
 
   it('should strip the external workspaces prefix', () => {
     expect(main(["--out", "index.html", "--html", inFile,
       "--roots", 'npm/node_modules/zone.js/dist',
       '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/zone.min.js'));
+    expect(output).toBe(scriptHtml('./zone.min.js'));
   });
 
   it('should strip the external workspaces prefix in Windows', () => {
@@ -119,7 +119,7 @@ describe('HTML inserter', () => {
     expect(main(["--out", "index.html", "--html", inFile,
       "--roots", 'npm/node_modules/zone.js/dist',
       '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, stamper)).toBe(0);
-    expect(output).toBe(scriptHtml('/zone.min.js'));
+    expect(output).toBe(scriptHtml('./zone.min.js'));
   });
 
   it('should inject .css files as stylesheet link tags', () => {
@@ -133,7 +133,7 @@ describe('HTML inserter', () => {
       "--roots", 'path', 'path/to',
       '--assets', 'path/to/my.css'], read, write, stamper)).toBe(0);
     expect(output).toBe(
-        '<html><head><link rel="stylesheet" href="/my.css?v=123"></head><body></body></html>');
+        '<html><head><link rel="stylesheet" href="./my.css?v=123"></head><body></body></html>');
   });
 
   it('should inject .css files when --assets= is used', () => {
@@ -153,7 +153,7 @@ describe('HTML inserter', () => {
       "--roots", 'path', 'path/to',
       '--assets', 'path/to/my.ico'], read, write, stamper)).toBe(0);
     expect(output).toBe(
-        '<html><head><link rel="shortcut icon" type="image/ico" href="/my.ico?v=123"></head><body></body></html>');
+        '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico?v=123"></head><body></body></html>');
   });
 });
 

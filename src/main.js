@@ -159,7 +159,7 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   function removeRootPath(p) {
     for (const r of rootDirs) {
       if (p.startsWith(r)) {
-        return '/' + p.substring(r.length);
+        return p.substring(r.length);
       }
     }
     return p;
