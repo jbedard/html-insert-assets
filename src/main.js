@@ -140,8 +140,9 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
-  log("files (js): %s", jsFiles);
-  log("files (css): %s", cssFiles);
+  jsFiles.length && log("files (js): %s", jsFiles);
+  cssFiles.length && log("files (css): %s", cssFiles);
+  icoFile && log("ico: %s", icoFile);
 
   const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
 
