@@ -16,7 +16,7 @@
     "test": "jasmine test/*.js"
   },
   "dependencies": {
-    "mkdirp": "^0.5.1",
+    "mkdirp": "^1.0.3",
     "parse5": "^5.1.1"
   },
   "devDependencies": {
