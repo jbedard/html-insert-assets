@@ -37,7 +37,7 @@ will insert:
 <script src="./c.js"></script>
 ```
 
-Root asset directories to trim and use absolute URLs
+Root asset directories to trim and convert to URLs relative to the the `--out` directory
 ```
 html-insert-assets
     --html ./index.tmpl.html
@@ -47,9 +47,9 @@ html-insert-assets
 ```
 will insert:
 ```html
-<script src="/a.js"></script>
-<script src="/b.js"></script>
-<script src="/sub/c.js"></script>
+<script src="./a.js"></script>
+<script src="./b.js"></script>
+<script src="./sub/c.js"></script>
 ```
 
 Root directories of assets (multiple):
@@ -62,9 +62,9 @@ html-insert-assets
 ```
 will insert:
 ```html
-<script src="/a.js"></script>
+<script src="./a.js"></script>
 <script src="./b.js"></script>
-<script src="/c.js"></script>
+<script src="./c.js"></script>
 ```
 
 Root directories of assets (multiple + alternate --out):
@@ -77,9 +77,22 @@ html-insert-assets
 ```
 will insert:
 ```html
-<script src="/a.js"></script>
+<script src="./a.js"></script>
 <script src="../b.js"></script>
-<script src="/c.js"></script>
+<script src="./c.js"></script>
+```
+
+Absolute paths outside any root directories:
+```
+html-insert-assets
+    --html ./index.tmpl.html
+    --out sub/index.html
+    --root sub /abs/path
+    --assets /path/to/my.js
+```
+will insert:
+```html
+    <script src="/path/to/my.js"></script>
 ```
 
 ## Notes
