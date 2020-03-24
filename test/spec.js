@@ -27,6 +27,16 @@ describe('HTML inserter', () => {
     expect(output).toBe('<html><head></head><body></body></html>');
   });
 
+  it('should normalize asset paths', () => {
+    main(["--out", "index.html", "--html", inFile, "--assets", "./b/../a.js", "./././b.js"], read, write, stamper);
+    expect(output).toBe('<html><head></head><body><script src="./a.js?v=123"></script><script src="./b.js?v=123"></script></body></html>');
+  });
+
+  it('should ensure asset paths start with a absolute or relative indicator', () => {
+    main(["--out", "index.html", "--html", inFile, "--assets", "./a.js", "/b.js", "c.js"], read, write, stamper);
+    expect(output).toBe('<html><head></head><body><script src="./a.js?v=123"></script><script src="/b.js?v=123"></script><script src="./c.js?v=123"></script></body></html>');
+  });
+
   it('should inject relative .js as script with path relative to output', () => {
     expect(main(["--out", "./index.html", "--html", inFile, '--assets', './path/to/my.js'], read, write, stamper)).toBe(0);
     expect(output).toBe(scriptHtml('./path/to/my.js', stamper));
@@ -109,6 +119,33 @@ describe('HTML inserter', () => {
       "--roots", 'npm/node_modules/zone.js/dist',
       '--assets', 'external/npm/node_modules/zone.js/dist/zone.min.js'], read, write, stamper)).toBe(0);
     expect(output).toBe(scriptHtml('./zone.min.js'));
+  });
+
+  it('should insert non-local URLs as-is', () => {
+    expect(main(
+      ["--out", "index.html", "--html", inFile, '--assets', 'https://ga.com/foo.js', 'http://foo.com/bar.js', 'file://local/file.js'], read, write,
+        stamper))
+      .toBe(0);
+      expect(output).toBe(
+      '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>');
+  });
+
+  it('should insert non-local URLs with params as-is', () => {
+    expect(main(
+      ["--out", "index.html", "--html", inFile, '--assets', 'https://ga.com/foo.js?v=123', 'https://ga.com/foo.js?v=123&c', 'http://foo.com/bar.js?v=123&a=asdf', 'file://local/file.js?asdf'], read, write,
+        stamper))
+      .toBe(0);
+      expect(output).toBe(
+      '<html><head></head><body><script src="https://ga.com/foo.js?v=123"></script><script src="https://ga.com/foo.js?v=123&amp;c"></script><script src="http://foo.com/bar.js?v=123&amp;a=asdf"></script><script src="file://local/file.js?asdf"></script></body></html>');
+  });
+
+  it('should maintain <script> order across local vs non-local URLs', () => {
+    expect(main(
+      ["--out", "index.html", "--html", inFile, '--assets', 'path/to/e1.js', 'https://ga.com/foo.js', , 'path/to/e2.js', 'http://foo.com/bar.js', 'path/to/e3.js', 'file://local/file.js'], read, write,
+        stamper))
+      .toBe(0);
+      expect(output).toBe(
+      '<html><head></head><body><script src="./path/to/e1.js?v=123"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js?v=123"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js?v=123"></script><script src="file://local/file.js"></script></body></html>');
   });
 
   it('should strip the external workspaces prefix in Windows', () => {
@@ -214,18 +251,6 @@ describe('parseArgs', () => {
     const {assets} = parseArgs([...REQUIRE_PARAMS, "--assets", "./a", "./b", "./c"]);
 
     expect(assets).toEqual(['./a', './b', './c']);
-  });
-
-  it('should normalize asset paths', () => {
-    const {assets} = parseArgs([...REQUIRE_PARAMS, "--assets", "./b/../a", "./././b"]);
-
-    expect(assets).toEqual(['./a', './b']);
-  });
-
-  it('should ensure asset paths start with a absolute or relative indicator', () => {
-    const {assets} = parseArgs([...REQUIRE_PARAMS, "--assets", "./a", "/b", "c"]);
-
-    expect(assets).toEqual(['./a', '/b', './c']);
   });
 
   it('should normalize roots paths', () => {

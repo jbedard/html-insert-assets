@@ -6,6 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 
+const EXTERNAL_RE = /^[a-z]+:\/\//;
+
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
   if (d.tagName && d.tagName.toLowerCase() === name) {
@@ -55,6 +57,19 @@ function readVarArgs(params, i) {
   return [args, i - 1];
 }
 
+function createScriptElement(src, moduleName) {
+  const attrs = [];
+  if (moduleName) {
+    attrs.push({name: "type", value: "module"});
+  } else if (moduleName === false) {
+    attrs.push({name: "nomodule", value: ""});
+  }
+
+  attrs.push({name: "src", value: src});
+
+  return treeAdapter.createElement('script', undefined, attrs);
+}
+
 function parseArgs(cmdParams) {
   let inputFile;
   let outputFile;
@@ -102,8 +117,7 @@ function parseArgs(cmdParams) {
     throw new Error("required: --html, --out");
   }
 
-  // Normalize paths
-  assets = assets.map(normalizePath);
+  // Normalize fs paths, assets done separately later
   rootDirs = rootDirs.map(normalizeDirPath);
   inputFile = inputFile && normalizePath(inputFile);
   outputFile = outputFile && normalizePath(outputFile);
@@ -133,9 +147,9 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   const {inputFile, outputFile, assets, rootDirs, verbose} = parseArgs(params);
   const log = createLogger(verbose);
 
-  const jsFiles = assets.filter(s => /\.m?js$/i.test(s));
-  const cssFiles = assets.filter(s => /\.css$/.test(s));
-  const icoFile = assets.filter(s => /\.ico$/.test(s))[0];
+  const jsFiles = assets.filter(s => /\.m?js$/i.test(s) || EXTERNAL_RE.test(s) && /\.m?js(\?.*)?$/.test(s));
+  const cssFiles = assets.filter(s => /\.css$/.test(s) || EXTERNAL_RE.test(s) && /\.css(\?.*)?$/.test(s));
+  const icoFile = assets.filter(s => /\.ico$/.test(s) || EXTERNAL_RE.test(s) && /\.ico(\?.*)?$/.test(s))[0];
 
   log("in: %s", inputFile);
   log("out: %s", outputFile);
@@ -186,6 +200,7 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   function toUrl(origPath) {
     let execPath = origPath;
 
+    execPath = normalizePath(execPath);
     execPath = removeExternal(execPath);
     execPath = removeRootPath(execPath);
     execPath = relativeToHtml(execPath);
@@ -203,17 +218,15 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   }
 
   for (const s of jsFiles) {
-    // Differential loading: for filenames like
-    //  foo.mjs
-    //  bar.es2015.js
-    // we use a <script type="module" tag so these are only run in browsers that have ES2015 module
-    // loading
-    if (/\.(es2015\.|m)js$/i.test(s)) {
-      const moduleScript = treeAdapter.createElement('script', undefined, [
-        {name: 'type', value: 'module'},
-        {name: 'src', value: toUrl(s)},
-      ]);
-      treeAdapter.appendChild(body, moduleScript);
+    if (EXTERNAL_RE.test(s)) {
+      treeAdapter.appendChild(body, createScriptElement(s, undefined));
+    } else if (/\.(es2015\.|m)js$/i.test(s)) {
+      // Differential loading: for filenames like
+      //  foo.mjs
+      //  bar.es2015.js
+      // we use a <script type="module" tag so these are only run in browsers that have ES2015 module
+      // loading
+      treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
     } else {
       // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
       // ESModule script we add a 'nomodule' attribute
@@ -230,12 +243,9 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
 
       // Note: empty string value is equivalent to a bare attribute, according to
       // https://github.com/inikulin/parse5/issues/1
-      const nomodule = hasMatchingModule(s, jsFiles) ? [{name: 'nomodule', value: ''}] : [];
+      const nomoduleAttr = hasMatchingModule(s, jsFiles) ? false : undefined;
 
-      const noModuleScript = treeAdapter.createElement('script', undefined, nomodule.concat([
-        {name: 'src', value: toUrl(s)},
-      ]));
-      treeAdapter.appendChild(body, noModuleScript);
+      treeAdapter.appendChild(body, createScriptElement(toUrl(s), nomoduleAttr));
     }
   }
 
