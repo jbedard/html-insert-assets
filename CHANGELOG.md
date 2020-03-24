@@ -1,3 +1,12 @@
+# [0.7.0](https://github.com/jbedard/html-insert-assets/compare/v0.6.0...v0.7.0) (2020-03-24)
+
+
+### Features
+
+* add support for external js files ([17bc413](https://github.com/jbedard/html-insert-assets/commit/17bc413fe2c53be0a2096daa9f30235eaf8e2c91))
+
+
+
 # [0.6.0](https://github.com/jbedard/html-insert-assets/compare/v0.5.0...v0.6.0) (2020-03-12)
 
 
