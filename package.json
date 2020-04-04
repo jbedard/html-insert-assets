@@ -13,14 +13,26 @@
     "html-insert-assets": "./src/main.js"
   },
   "scripts": {
-    "test": "jasmine test/*.js"
+    "test": "jasmine test/*.js",
+    "lint": "eslint --fix {src,test}/*.js"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
   },
   "dependencies": {
     "mkdirp": "^1.0.3",
     "parse5": "^5.1.1"
   },
   "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-prettier": "^3.1.2",
+    "husky": "^4.2.3",
     "jasmine": "^3.5.0",
+    "lint-staged": "^10.1.1",
+    "prettier": "^2.0.2",
     "standard-changelog": "^2.0.18"
   }
 }

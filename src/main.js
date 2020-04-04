@@ -1,10 +1,10 @@
 // Originally forked from https://github.com/bazelbuild/rules_nodejs/tree/0.41.0/packages/inject-html
 
-const parse5 = require('parse5');
-const treeAdapter = require('parse5/lib/tree-adapters/default');
-const fs = require('fs');
-const path = require('path');
-const mkdirp = require('mkdirp');
+const parse5 = require("parse5");
+const treeAdapter = require("parse5/lib/tree-adapters/default");
+const fs = require("fs");
+const path = require("path");
+const mkdirp = require("mkdirp");
 
 const EXTERNAL_RE = /^[a-z]+:\/\//;
 const FILE_TYPE_RE = /\.(m?js|css|ico)$/i;
@@ -47,8 +47,8 @@ function findElementByName(d, name) {
 function normalizePath(p) {
   p = path.normalize(p);
   // Convert paths to posix
-  p = p.replace(/\\/g, '/');
-  if (p[0] !== '/' && p[0] !== '.') {
+  p = p.replace(/\\/g, "/");
+  if (p[0] !== "/" && p[0] !== ".") {
     p = `./${p}`;
   }
   return p;
@@ -56,15 +56,15 @@ function normalizePath(p) {
 
 function normalizeDirPath(d) {
   d = normalizePath(d);
-  if (!d.endsWith('/')) {
-    d = d + '/';
+  if (!d.endsWith("/")) {
+    d = d + "/";
   }
   return d;
 }
 
 function removeExternal(p) {
-  if (p.startsWith('./external/')) {
-    p = normalizePath( p.substring('./external/'.length) );
+  if (p.startsWith("./external/")) {
+    p = normalizePath(p.substring("./external/".length));
   }
   return p;
 }
@@ -80,14 +80,14 @@ function readVarArgs(params, i) {
 function createScriptElement(src, moduleName) {
   const attrs = [];
   if (moduleName) {
-    attrs.push({name: "type", value: "module"});
+    attrs.push({ name: "type", value: "module" });
   } else if (moduleName === false) {
-    attrs.push({name: "nomodule", value: ""});
+    attrs.push({ name: "nomodule", value: "" });
   }
 
-  attrs.push({name: "src", value: src});
+  attrs.push({ name: "src", value: src });
 
-  return treeAdapter.createElement('script', undefined, attrs);
+  return treeAdapter.createElement("script", undefined, attrs);
 }
 
 function parseArgs(cmdParams) {
@@ -100,7 +100,7 @@ function parseArgs(cmdParams) {
 
   const params = cmdParams.reduce((a, p) => {
     if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
-      a.push( ... p.split('=', 2));
+      a.push(...p.split("=", 2));
     } else {
       a.push(p);
     }
@@ -110,7 +110,7 @@ function parseArgs(cmdParams) {
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
       case "--assets":
-        [assetsList, i] = readVarArgs(params, i+1);
+        [assetsList, i] = readVarArgs(params, i + 1);
         break;
 
       case "--strict":
@@ -118,7 +118,7 @@ function parseArgs(cmdParams) {
         break;
 
       case "--roots":
-        [rootDirs, i] = readVarArgs(params, i+1);
+        [rootDirs, i] = readVarArgs(params, i + 1);
         break;
 
       case "--out":
@@ -155,7 +155,7 @@ function parseArgs(cmdParams) {
   // Always trim the longest root first
   rootDirs.sort((a, b) => b.length - a.length);
 
-  return {inputFile, outputFile, assets, rootDirs, verbose};
+  return { inputFile, outputFile, assets, rootDirs, verbose };
 }
 
 function createLogger(verbose) {
@@ -173,26 +173,37 @@ function mkdirpWrite(filePath, value) {
   fs.writeFileSync(filePath, value);
 }
 
-function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = Date.now) {
-  const {inputFile, outputFile, assets, rootDirs, verbose} = parseArgs(params);
+function main(
+  params,
+  read = fs.readFileSync,
+  write = mkdirpWrite,
+  timestamp = Date.now
+) {
+  const { inputFile, outputFile, assets, rootDirs, verbose } = parseArgs(
+    params
+  );
   const log = createLogger(verbose);
 
   // Log the parsed params
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
-  Object.keys(assets).forEach(type => log("files (%s): %s", type, assets[type]));
+  Object.keys(assets).forEach((type) =>
+    log("files (%s): %s", type, assets[type])
+  );
 
-  const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
+  const document = parse5.parse(read(inputFile, { encoding: "utf-8" }), {
+    treeAdapter,
+  });
 
-  const body = findElementByName(document, 'body');
+  const body = findElementByName(document, "body");
   if (!body) {
-    throw new Error('No <body> tag found in HTML document');
+    throw new Error("No <body> tag found in HTML document");
   }
 
-  const head = findElementByName(document, 'head');
+  const head = findElementByName(document, "head");
   if (!head) {
-    throw new Error('No <head> tag found in HTML document');
+    throw new Error("No <head> tag found in HTML document");
   }
 
   function removeRootPath(p) {
@@ -221,6 +232,9 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
    * - output file path (urls are relative to this)
    * - /external/ prefix
    * - standard path normalization
+   *
+   * @param {string} origPath the path to convert to a normalized URL
+   * @return {string} the normalized URL
    */
   function toUrl(origPath) {
     let execPath = origPath;
@@ -242,7 +256,20 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
     return `${execPath}?v=${stamp}`;
   }
 
-  const {js, css, ico} = assets;
+  // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
+  // ESModule script we add a 'nomodule' attribute
+  function hasMatchingModule(file, files) {
+    const noExt = file.substring(0, file.length - 3);
+    const testMjs = (noExt + ".mjs").toLowerCase();
+    const testEs2015 = (noExt + ".es2015.js").toLowerCase();
+    const matches = files.filter((t) => {
+      const lc = t.toLowerCase();
+      return lc === testMjs || lc === testEs2015;
+    });
+    return matches.length > 0;
+  }
+
+  const { js, css, ico } = assets;
 
   if (js) {
     for (const s of js) {
@@ -252,37 +279,28 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
         // Differential loading: for filenames like
         //  foo.mjs
         //  bar.es2015.js
-        // we use a <script type="module" tag so these are only run in browsers that have ES2015 module
-        // loading
+        //
+        // Use a <script type="module"> tag so these are only run in browsers that have
+        // ES2015 module loading.
         treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
       } else {
-        // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
-        // ESModule script we add a 'nomodule' attribute
-        function hasMatchingModule(file, files) {
-          const noExt = file.substring(0, file.length - 3);
-          const testMjs = (noExt + '.mjs').toLowerCase();
-          const testEs2015 = (noExt + '.es2015.js').toLowerCase();
-          const matches = files.filter(t => {
-            const lc = t.toLowerCase();
-            return lc === testMjs || lc === testEs2015;
-          });
-          return matches.length > 0;
-        }
-
         // Note: empty string value is equivalent to a bare attribute, according to
         // https://github.com/inikulin/parse5/issues/1
         const nomoduleAttr = hasMatchingModule(s, js) ? false : undefined;
 
-        treeAdapter.appendChild(body, createScriptElement(toUrl(s), nomoduleAttr));
+        treeAdapter.appendChild(
+          body,
+          createScriptElement(toUrl(s), nomoduleAttr)
+        );
       }
     }
   }
 
   if (css) {
     for (const s of css) {
-      const stylesheet = treeAdapter.createElement('link', undefined, [
-        {name: 'rel', value: 'stylesheet'},
-        {name: 'href', value: toUrl(s)},
+      const stylesheet = treeAdapter.createElement("link", undefined, [
+        { name: "rel", value: "stylesheet" },
+        { name: "href", value: toUrl(s) },
       ]);
       treeAdapter.appendChild(head, stylesheet);
     }
@@ -290,23 +308,23 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
 
   if (ico) {
     for (const icoFile of ico) {
-      const icoLink = treeAdapter.createElement('link', undefined, [
-        {name: 'rel', value: 'shortcut icon'},
-        {name: 'type', value: 'image/ico'},
-        {name: 'href', value: toUrl(icoFile)},
+      const icoLink = treeAdapter.createElement("link", undefined, [
+        { name: "rel", value: "shortcut icon" },
+        { name: "type", value: "image/ico" },
+        { name: "href", value: toUrl(icoFile) },
       ]);
       treeAdapter.appendChild(head, icoLink);
     }
   }
 
-  const content = parse5.serialize(document, {treeAdapter});
-  write(outputFile, content, {encoding: 'utf-8'});
+  const content = parse5.serialize(document, { treeAdapter });
+  write(outputFile, content, { encoding: "utf-8" });
   return 0;
 }
 
 module.exports = {
   parseArgs,
-  main
+  main,
 };
 
 if (require.main === module) {
