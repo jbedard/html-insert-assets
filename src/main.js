@@ -7,6 +7,26 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 
 const EXTERNAL_RE = /^[a-z]+:\/\//;
+const FILE_TYPE_RE = /\.(m?js|css|ico)$/i;
+const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.(m?js|css|ico)(\?.*)?$/i;
+const UNKNOWN_ASSET = "unknwon";
+
+function computeAssets(assets) {
+  return assets.reduce((map, a) => {
+    const r = a.match(EXTERNAL_FILE_TYPE_RE) || a.match(FILE_TYPE_RE);
+    let type;
+    if (r) {
+      const [, ext] = r;
+      type = ext.toLowerCase().replace("mjs", "js");
+    } else {
+      type = UNKNOWN_ASSET;
+    }
+
+    (map[type] || (map[type] = [])).push(a);
+
+    return map;
+  }, {});
+}
 
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
@@ -73,9 +93,10 @@ function createScriptElement(src, moduleName) {
 function parseArgs(cmdParams) {
   let inputFile;
   let outputFile;
-  let assets = [];
+  let assetsList = [];
   let rootDirs = [];
   let verbose = false;
+  let strict = false;
 
   const params = cmdParams.reduce((a, p) => {
     if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
@@ -89,7 +110,11 @@ function parseArgs(cmdParams) {
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
       case "--assets":
-        [assets, i] = readVarArgs(params, i+1);
+        [assetsList, i] = readVarArgs(params, i+1);
+        break;
+
+      case "--strict":
+        strict = true;
         break;
 
       case "--roots":
@@ -115,6 +140,11 @@ function parseArgs(cmdParams) {
 
   if (!inputFile || !outputFile) {
     throw new Error("required: --html, --out");
+  }
+
+  const assets = computeAssets(assetsList);
+  if (strict && assets[UNKNOWN_ASSET]) {
+    throw new Error("Unknown asset types: " + assets[UNKNOWN_ASSET]);
   }
 
   // Normalize fs paths, assets done separately later
@@ -147,16 +177,11 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
   const {inputFile, outputFile, assets, rootDirs, verbose} = parseArgs(params);
   const log = createLogger(verbose);
 
-  const jsFiles = assets.filter(s => /\.m?js$/i.test(s) || EXTERNAL_RE.test(s) && /\.m?js(\?.*)?$/.test(s));
-  const cssFiles = assets.filter(s => /\.css$/.test(s) || EXTERNAL_RE.test(s) && /\.css(\?.*)?$/.test(s));
-  const icoFile = assets.filter(s => /\.ico$/.test(s) || EXTERNAL_RE.test(s) && /\.ico(\?.*)?$/.test(s))[0];
-
+  // Log the parsed params
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
-  jsFiles.length && log("files (js): %s", jsFiles);
-  cssFiles.length && log("files (css): %s", cssFiles);
-  icoFile && log("ico: %s", icoFile);
+  Object.keys(assets).forEach(type => log("files (%s): %s", type, assets[type]));
 
   const document = parse5.parse(read(inputFile, {encoding: 'utf-8'}), {treeAdapter});
 
@@ -217,53 +242,61 @@ function main(params, read = fs.readFileSync, write = mkdirpWrite, timestamp = D
     return `${execPath}?v=${stamp}`;
   }
 
-  for (const s of jsFiles) {
-    if (EXTERNAL_RE.test(s)) {
-      treeAdapter.appendChild(body, createScriptElement(s, undefined));
-    } else if (/\.(es2015\.|m)js$/i.test(s)) {
-      // Differential loading: for filenames like
-      //  foo.mjs
-      //  bar.es2015.js
-      // we use a <script type="module" tag so these are only run in browsers that have ES2015 module
-      // loading
-      treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
-    } else {
-      // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
-      // ESModule script we add a 'nomodule' attribute
-      function hasMatchingModule(file, files) {
-        const noExt = file.substring(0, file.length - 3);
-        const testMjs = (noExt + '.mjs').toLowerCase();
-        const testEs2015 = (noExt + '.es2015.js').toLowerCase();
-        const matches = files.filter(t => {
-          const lc = t.toLowerCase();
-          return lc === testMjs || lc === testEs2015;
-        });
-        return matches.length > 0;
+  const {js, css, ico} = assets;
+
+  if (js) {
+    for (const s of js) {
+      if (EXTERNAL_RE.test(s)) {
+        treeAdapter.appendChild(body, createScriptElement(s, undefined));
+      } else if (/\.(es2015\.|m)js$/i.test(s)) {
+        // Differential loading: for filenames like
+        //  foo.mjs
+        //  bar.es2015.js
+        // we use a <script type="module" tag so these are only run in browsers that have ES2015 module
+        // loading
+        treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
+      } else {
+        // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
+        // ESModule script we add a 'nomodule' attribute
+        function hasMatchingModule(file, files) {
+          const noExt = file.substring(0, file.length - 3);
+          const testMjs = (noExt + '.mjs').toLowerCase();
+          const testEs2015 = (noExt + '.es2015.js').toLowerCase();
+          const matches = files.filter(t => {
+            const lc = t.toLowerCase();
+            return lc === testMjs || lc === testEs2015;
+          });
+          return matches.length > 0;
+        }
+
+        // Note: empty string value is equivalent to a bare attribute, according to
+        // https://github.com/inikulin/parse5/issues/1
+        const nomoduleAttr = hasMatchingModule(s, js) ? false : undefined;
+
+        treeAdapter.appendChild(body, createScriptElement(toUrl(s), nomoduleAttr));
       }
-
-      // Note: empty string value is equivalent to a bare attribute, according to
-      // https://github.com/inikulin/parse5/issues/1
-      const nomoduleAttr = hasMatchingModule(s, jsFiles) ? false : undefined;
-
-      treeAdapter.appendChild(body, createScriptElement(toUrl(s), nomoduleAttr));
     }
   }
 
-  for (const s of cssFiles) {
-    const stylesheet = treeAdapter.createElement('link', undefined, [
-      {name: 'rel', value: 'stylesheet'},
-      {name: 'href', value: toUrl(s)},
-    ]);
-    treeAdapter.appendChild(head, stylesheet);
+  if (css) {
+    for (const s of css) {
+      const stylesheet = treeAdapter.createElement('link', undefined, [
+        {name: 'rel', value: 'stylesheet'},
+        {name: 'href', value: toUrl(s)},
+      ]);
+      treeAdapter.appendChild(head, stylesheet);
+    }
   }
 
-  if (icoFile) {
-    const icoLink = treeAdapter.createElement('link', undefined, [
-      {name: 'rel', value: 'shortcut icon'},
-      {name: 'type', value: 'image/ico'},
-      {name: 'href', value: toUrl(icoFile)},
-    ]);
-    treeAdapter.appendChild(head, icoLink);
+  if (ico) {
+    for (const icoFile of ico) {
+      const icoLink = treeAdapter.createElement('link', undefined, [
+        {name: 'rel', value: 'shortcut icon'},
+        {name: 'type', value: 'image/ico'},
+        {name: 'href', value: toUrl(icoFile)},
+      ]);
+      treeAdapter.appendChild(head, icoLink);
+    }
   }
 
   const content = parse5.serialize(document, {treeAdapter});

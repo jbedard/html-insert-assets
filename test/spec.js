@@ -251,12 +251,6 @@ describe('parseArgs', () => {
     expect(() => parseArgs(["--html", "in"])).toThrowError("required: --html, --out");
   });
 
-  it('should accept multiple assets', () => {
-    const {assets} = parseArgs([...REQUIRE_PARAMS, "--assets", "./a", "./b", "./c"]);
-
-    expect(assets).toEqual(['./a', './b', './c']);
-  });
-
   it('should normalize roots paths', () => {
     const {rootDirs} = parseArgs([...REQUIRE_PARAMS, "--roots", "./b/../a/", "./././b"]);
 
@@ -275,14 +269,10 @@ describe('parseArgs', () => {
     expect(rootDirs).toEqual(['./a/', './b/', '/c/']);
   });
 
-  it('should accept empty assets', () => {
-    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets"])).not.toThrow();
-  });
-
   it('should accept no assets arg', () => {
     const {assets} = parseArgs([...REQUIRE_PARAMS]);
 
-    expect(assets).toEqual([]);
+    expect(assets).toEqual({});
   });
 
   it('should accept empty roots', () => {
@@ -324,13 +314,13 @@ describe('parseArgs', () => {
     const {outputFile, inputFile, assets, rootDirs} = parseArgs([
       "--out", "./out",
       "--html", "./in",
-      "--assets", "./a", "./b",
+      "--assets", "./a.js", "./b.js",
       "--roots", "/c/", "/d/"
     ]);
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets).toEqual(["./a", "./b"]);
+    expect(assets).toEqual({js: ["./a.js", "./b.js"]});
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -338,13 +328,39 @@ describe('parseArgs', () => {
     const {outputFile, inputFile, assets, rootDirs} = parseArgs([
       "--out=./out",
       "--html=./in",
-      "--assets=./a", "./b",
+      "--assets=./a.js", "./b.js",
       "--roots=/c/", "/d/"
     ]);
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets).toEqual(["./a", "./b"]);
+    expect(assets).toEqual({js: ["./a.js", "./b.js"]});
     expect(rootDirs).toEqual(["/c/", "/d/"]);
+  });
+
+  it('should accept empty assets', () => {
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets"])).not.toThrow();
+  });
+
+  it('should accept multiple assets', () => {
+    const {assets} = parseArgs([...REQUIRE_PARAMS, "--assets", "./a.js", "./b.js", "./b.css", "./c.ico"]);
+
+    expect(assets).toEqual({js: ['./a.js', './b.js'], css: ['./b.css'], ico: ['./c.ico']});
+  });
+
+  it('should throw when --strict and unknown asset types', () => {
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo"])).toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.bar"])).toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.js.bar"])).toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.js", "foo.ts"])).toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.js", "foo.d.ts"])).toThrow();
+  });
+
+  it('should not throw when non --strict and unknown asset types', () => {
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets", "foo"])).not.toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets", "foo.bar"])).not.toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js.bar"])).not.toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js", "foo.ts"])).not.toThrow();
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js", "foo.d.ts"])).not.toThrow();
   });
 });
