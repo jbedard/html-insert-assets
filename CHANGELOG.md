@@ -1,3 +1,12 @@
+# [0.8.0](https://github.com/jbedard/html-insert-assets/compare/v0.7.0...v0.8.0) (2020-04-05)
+
+
+### Features
+
+* add --strict to throw when unknown asset types are passed ([1192014](https://github.com/jbedard/html-insert-assets/commit/1192014faab7d679033f8226b422e6673aa3f1f1))
+
+
+
 # [0.7.0](https://github.com/jbedard/html-insert-assets/compare/v0.6.0...v0.7.0) (2020-03-24)
 
 
