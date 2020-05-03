@@ -6,21 +6,22 @@ const fs = require("fs");
 const path = require("path");
 const mkdirp = require("mkdirp");
 
+const NPM_NAME = "html-insert-assets";
+
 const EXTERNAL_RE = /^[a-z]+:\/\//;
-const FILE_TYPE_RE = /\.(m?js|css|ico)$/i;
-const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.(m?js|css|ico)(\?.*)?$/i;
-const UNKNOWN_ASSET = "unknwon";
+const FILE_TYPE_RE = /\.([a-z]+)$/i;
+const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
+const NOW = String(Date.now());
+
+function fileExtToType(ext) {
+  return ext === "mjs" ? "js" : ext;
+}
 
 function computeAssets(assets) {
   return assets.reduce((map, a) => {
     const r = a.match(EXTERNAL_FILE_TYPE_RE) || a.match(FILE_TYPE_RE);
-    let type;
-    if (r) {
-      const [, ext] = r;
-      type = ext.toLowerCase().replace("mjs", "js");
-    } else {
-      type = UNKNOWN_ASSET;
-    }
+    const [, ext] = r || ["", "(no ext)"];
+    const type = fileExtToType(ext.toLowerCase());
 
     (map[type] || (map[type] = [])).push(a);
 
@@ -134,18 +135,15 @@ function parseArgs(cmdParams) {
         break;
 
       default:
-        throw Error(`Unknown arg: ${params[i]}`);
+        throw newError(`Unknown arg: ${params[i]}`);
     }
   }
 
   if (!inputFile || !outputFile) {
-    throw new Error("required: --html, --out");
+    throw newError("required: --html, --out");
   }
 
   const assets = computeAssets(assetsList);
-  if (strict && assets[UNKNOWN_ASSET]) {
-    throw new Error("Unknown asset types: " + assets[UNKNOWN_ASSET]);
-  }
 
   // Normalize fs paths, assets done separately later
   rootDirs = rootDirs.map(normalizeDirPath);
@@ -155,7 +153,74 @@ function parseArgs(cmdParams) {
   // Always trim the longest root first
   rootDirs.sort((a, b) => b.length - a.length);
 
-  return { inputFile, outputFile, assets, rootDirs, verbose };
+  return { inputFile, outputFile, assets, rootDirs, strict, verbose };
+}
+
+function stampNow(url) {
+  if (!EXTERNAL_RE.test(url)) {
+    return `${url}?v=${NOW}`;
+  }
+
+  return url;
+}
+
+function insertScripts({ treeAdapter, body, toUrl }, paths) {
+  // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
+  // ESModule script we add a 'nomodule' attribute
+  function hasMatchingModule(file) {
+    const noExt = file.substring(0, file.length - 3);
+    const testMjs = (noExt + ".mjs").toLowerCase();
+    const testEs2015 = (noExt + ".es2015.js").toLowerCase();
+    const matches = paths.filter((t) => {
+      const lc = t.toLowerCase();
+      return lc === testMjs || lc === testEs2015;
+    });
+    return matches.length > 0;
+  }
+
+  for (const s of paths) {
+    if (EXTERNAL_RE.test(s)) {
+      treeAdapter.appendChild(body, createScriptElement(toUrl(s), undefined));
+    } else if (/\.(es2015\.|m)js$/i.test(s)) {
+      // Differential loading: for filenames like
+      //  foo.mjs
+      //  bar.es2015.js
+      //
+      // Use a <script type="module"> tag so these are only run in browsers that have
+      // ES2015 module loading.
+      treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
+    } else {
+      // Note: empty string value is equivalent to a bare attribute, according to
+      // https://github.com/inikulin/parse5/issues/1
+      const nomoduleAttr = hasMatchingModule(s) ? false : undefined;
+
+      treeAdapter.appendChild(
+        body,
+        createScriptElement(toUrl(s), nomoduleAttr)
+      );
+    }
+  }
+}
+
+function insertCss({ treeAdapter, head, toUrl }, paths) {
+  for (const css of paths) {
+    const stylesheet = treeAdapter.createElement("link", undefined, [
+      { name: "rel", value: "stylesheet" },
+      { name: "href", value: toUrl(css) },
+    ]);
+    treeAdapter.appendChild(head, stylesheet);
+  }
+}
+
+function insertFavicons({ treeAdapter, head, toUrl }, paths) {
+  for (const ico of paths) {
+    const icoLink = treeAdapter.createElement("link", undefined, [
+      { name: "rel", value: "shortcut icon" },
+      { name: "type", value: "image/ico" },
+      { name: "href", value: toUrl(ico) },
+    ]);
+    treeAdapter.appendChild(head, icoLink);
+  }
 }
 
 function createLogger(verbose) {
@@ -164,8 +229,16 @@ function createLogger(verbose) {
   }
 
   return function logger(str, ...args) {
-    console.log("html-insert-assets: " + str, ...args);
+    console.log(`${NPM_NAME}: ${str}`, ...args);
   };
+}
+
+function warn(str, ...args) {
+  console.warn(`${NPM_NAME}: ${str}`, ...args);
+}
+
+function newError(str, ...args) {
+  return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
 }
 
 function mkdirpWrite(filePath, value) {
@@ -177,11 +250,16 @@ function main(
   params,
   read = fs.readFileSync,
   write = mkdirpWrite,
-  timestamp = Date.now
+  stamper = stampNow
 ) {
-  const { inputFile, outputFile, assets, rootDirs, verbose } = parseArgs(
-    params
-  );
+  const {
+    inputFile,
+    outputFile,
+    assets,
+    rootDirs,
+    strict,
+    verbose,
+  } = parseArgs(params);
   const log = createLogger(verbose);
 
   // Log the parsed params
@@ -198,12 +276,12 @@ function main(
 
   const body = findElementByName(document, "body");
   if (!body) {
-    throw new Error("No <body> tag found in HTML document");
+    throw newError("No <body> tag found in HTML document");
   }
 
   const head = findElementByName(document, "head");
   if (!head) {
-    throw new Error("No <head> tag found in HTML document");
+    throw newError("No <head> tag found in HTML document");
   }
 
   function removeRootPath(p) {
@@ -233,11 +311,17 @@ function main(
    * - /external/ prefix
    * - standard path normalization
    *
+   * Leaves external URLs as-is.
+   *
    * @param {string} origPath the path to convert to a normalized URL
    * @return {string} the normalized URL
    */
   function toUrl(origPath) {
     let execPath = origPath;
+
+    if (EXTERNAL_RE.test(origPath)) {
+      return origPath;
+    }
 
     execPath = normalizePath(execPath);
     execPath = removeExternal(execPath);
@@ -249,71 +333,34 @@ function main(
       log("reduce: %s => %s", origPath, execPath);
     }
 
-    const stamp = timestamp(origPath);
-
-    log("stamp: %s @ %s", execPath, stamp);
-
-    return `${execPath}?v=${stamp}`;
+    return stamper(execPath);
   }
 
-  // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
-  // ESModule script we add a 'nomodule' attribute
-  function hasMatchingModule(file, files) {
-    const noExt = file.substring(0, file.length - 3);
-    const testMjs = (noExt + ".mjs").toLowerCase();
-    const testEs2015 = (noExt + ".es2015.js").toLowerCase();
-    const matches = files.filter((t) => {
-      const lc = t.toLowerCase();
-      return lc === testMjs || lc === testEs2015;
-    });
-    return matches.length > 0;
-  }
+  const utils = { treeAdapter, toUrl, body, head };
 
-  const { js, css, ico } = assets;
+  // Insertion of various asset types
+  for (const [type, paths] of Object.entries(assets)) {
+    switch (type) {
+      case "js":
+        insertScripts(utils, paths);
+        break;
 
-  if (js) {
-    for (const s of js) {
-      if (EXTERNAL_RE.test(s)) {
-        treeAdapter.appendChild(body, createScriptElement(s, undefined));
-      } else if (/\.(es2015\.|m)js$/i.test(s)) {
-        // Differential loading: for filenames like
-        //  foo.mjs
-        //  bar.es2015.js
-        //
-        // Use a <script type="module"> tag so these are only run in browsers that have
-        // ES2015 module loading.
-        treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
-      } else {
-        // Note: empty string value is equivalent to a bare attribute, according to
-        // https://github.com/inikulin/parse5/issues/1
-        const nomoduleAttr = hasMatchingModule(s, js) ? false : undefined;
+      case "css":
+        insertCss(utils, paths);
+        break;
 
-        treeAdapter.appendChild(
-          body,
-          createScriptElement(toUrl(s), nomoduleAttr)
-        );
-      }
-    }
-  }
+      case "ico":
+        insertFavicons(utils, paths);
+        break;
 
-  if (css) {
-    for (const s of css) {
-      const stylesheet = treeAdapter.createElement("link", undefined, [
-        { name: "rel", value: "stylesheet" },
-        { name: "href", value: toUrl(s) },
-      ]);
-      treeAdapter.appendChild(head, stylesheet);
-    }
-  }
-
-  if (ico) {
-    for (const icoFile of ico) {
-      const icoLink = treeAdapter.createElement("link", undefined, [
-        { name: "rel", value: "shortcut icon" },
-        { name: "type", value: "image/ico" },
-        { name: "href", value: toUrl(icoFile) },
-      ]);
-      treeAdapter.appendChild(head, icoLink);
+      default:
+        // eslint-disable-next-line no-case-declarations
+        const msg = `Unknown asset type(${type}), paths(${paths})`;
+        if (strict) {
+          throw newError(msg);
+        } else {
+          warn(msg);
+        }
     }
   }
 

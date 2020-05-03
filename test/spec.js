@@ -18,8 +18,8 @@ function write(_, content) {
 
 afterEach(() => (output = NaN));
 
-function stamper() {
-  return 123;
+function stamper(url) {
+  return `${url}?v=123`;
 }
 
 function mainTest(args) {
@@ -735,27 +735,27 @@ describe("parseArgs", () => {
   it("should throw with multiple --out", () => {
     expect(() =>
       parseArgs(["--html", "validhtml", "--out", "./foo", "./bar"])
-    ).toThrowError("Unknown arg: ./bar");
+    ).toThrowError("html-insert-assets: Unknown arg: ./bar");
   });
 
   it("should throw with multiple --html", () => {
     expect(() =>
       parseArgs(["--out", "foo", "--html", "./foo", "./bar"])
-    ).toThrowError("Unknown arg: ./bar");
+    ).toThrowError("html-insert-assets: Unknown arg: ./bar");
   });
 
   it("should throw with unknown arg", () => {
     expect(() => parseArgs(["--badparam"])).toThrowError(
-      "Unknown arg: --badparam"
+      "html-insert-assets: Unknown arg: --badparam"
     );
   });
 
   it("should throw with no --out and --html", () => {
     expect(() => parseArgs(["--out", "out"])).toThrowError(
-      "required: --html, --out"
+      "html-insert-assets: required: --html, --out"
     );
     expect(() => parseArgs(["--html", "in"])).toThrowError(
-      "required: --html, --out"
+      "html-insert-assets: required: --html, --out"
     );
   });
 
