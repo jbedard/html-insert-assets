@@ -1,15 +1,7 @@
 const path = require("path");
 const { main, parseArgs } = require("../src/main");
 
-const inFile = path.normalize("./data/some/index.html");
-
-function read(file) {
-  if (path.normalize(file) === path.normalize(inFile)) {
-    return `<html><head></head><body></body></html>`;
-  }
-
-  throw new Error(`no content for ${file}: ${path.normalize(file)}`);
-}
+const inFile = "./test/data/index-template.html";
 
 let output;
 function write(_, content) {
@@ -23,7 +15,7 @@ function stamper(url) {
 }
 
 function mainTest(args) {
-  return main(args, read, write, stamper);
+  return main(args, write, stamper);
 }
 
 function scriptHtml(script) {
@@ -437,7 +429,6 @@ describe("js assets", () => {
           "http://foo.com/bar.js",
           "file://local/file.js",
         ],
-        read,
         write,
         stamper
       )
@@ -461,7 +452,6 @@ describe("js assets", () => {
           "http://foo.com/bar.js?v=123&a=asdf",
           "file://local/file.js?asdf",
         ],
-        read,
         write,
         stamper
       )
@@ -487,7 +477,6 @@ describe("js assets", () => {
           "path/to/e3.js",
           "file://local/file.js",
         ],
-        read,
         write,
         stamper
       )
@@ -684,7 +673,6 @@ describe("js modules", () => {
           "path/to/my.js",
           "path/to/my.es2015.js",
         ],
-        read,
         write,
         stamper
       )
@@ -706,7 +694,6 @@ describe("js modules", () => {
           "path/to/my.js",
           "path/to/my.mjs",
         ],
-        read,
         write,
         stamper
       )

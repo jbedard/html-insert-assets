@@ -281,12 +281,7 @@ function mkdirpWrite(filePath, value) {
   fs.writeFileSync(filePath, value);
 }
 
-function main(
-  params,
-  read = fs.readFileSync,
-  write = mkdirpWrite,
-  stamper = stampNow
-) {
+function main(params, write = mkdirpWrite, stamper = stampNow) {
   const {
     inputFile,
     outputFile,
@@ -309,9 +304,10 @@ function main(
     log("preload files (%s): %s", type, typeAssets)
   );
 
-  const document = parse5.parse(read(inputFile, { encoding: "utf-8" }), {
-    treeAdapter,
-  });
+  const document = parse5.parse(
+    fs.readFileSync(inputFile, { encoding: "utf-8" }),
+    { treeAdapter }
+  );
 
   const body = findElementByName(document, "body");
   if (!body) {
