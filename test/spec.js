@@ -16,6 +16,8 @@ function write(_, content) {
   output = content;
 }
 
+afterEach(() => (output = NaN));
+
 function stamper() {
   return 123;
 }
@@ -24,11 +26,11 @@ function mainTest(args) {
   return main(args, read, write, stamper);
 }
 
-describe("HTML inserter", () => {
-  function scriptHtml(script) {
-    return `<html><head></head><body><script src="${script}?v=123"></script></body></html>`;
-  }
+function scriptHtml(script) {
+  return `<html><head></head><body><script src="${script}?v=123"></script></body></html>`;
+}
 
+describe("base", () => {
   it("should noop when no assets", () => {
     expect(mainTest(["--out", "index.html", "--html", inFile])).toBe(0);
     expect(output).toBe("<html><head></head><body></body></html>");
@@ -49,7 +51,118 @@ describe("HTML inserter", () => {
     );
   });
 
-  it("should ensure asset paths start with a absolute or relative indicator", () => {
+  it("should throw when --strict and unknown asset types", () => {
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--assets",
+        "foo",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--assets",
+        "foo.bar",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--assets",
+        "foo.js.bar",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--assets",
+        "foo.js",
+        "foo.ts",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--assets",
+        "foo.js",
+        "foo.d.ts",
+      ])
+    ).toThrow();
+  });
+
+  it("should not throw when non --strict and unknown asset types", () => {
+    expect(() =>
+      mainTest(["--out", "index.html", "--html", inFile, "--assets", "foo"])
+    ).not.toThrow();
+
+    expect(() =>
+      mainTest(["--out", "index.html", "--html", inFile, "--assets", "foo.bar"])
+    ).not.toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "foo.js.bar",
+      ])
+    ).not.toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "foo.js",
+        "foo.ts",
+      ])
+    ).not.toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "foo.js",
+        "foo.d.ts",
+      ])
+    ).not.toThrow();
+  });
+});
+
+describe("js assets", () => {
+  it("should ensure js asset paths start with a absolute or relative indicator", () => {
     mainTest([
       "--out",
       "index.html",
@@ -403,6 +516,24 @@ describe("HTML inserter", () => {
     ).toBe(0);
     expect(output).toBe(scriptHtml("./zone.min.js"));
   });
+});
+
+describe("css assets", () => {
+  it("should ensure css asset paths start with a absolute or relative indicator", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.css",
+      "/b.css",
+      "c.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css?v=123"><link rel="stylesheet" href="/b.css?v=123"><link rel="stylesheet" href="./c.css?v=123"></head><body></body></html>'
+    );
+  });
 
   it("should inject .css files as stylesheet link tags", () => {
     expect(
@@ -453,6 +584,24 @@ describe("HTML inserter", () => {
       '<html><head><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>'
     );
   });
+});
+
+describe("ico assets", () => {
+  it("should ensure ico asset paths start with a absolute or relative indicator", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.ico",
+      "/b.ico",
+      "c.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico?v=123"><link rel="shortcut icon" type="image/ico" href="/b.ico?v=123"><link rel="shortcut icon" type="image/ico" href="./c.ico?v=123"></head><body></body></html>'
+    );
+  });
 
   it("should inject .ico files as shortcut/icon link tags", () => {
     expect(
@@ -490,7 +639,7 @@ describe("HTML inserter", () => {
   });
 });
 
-describe("modules", () => {
+describe("js modules", () => {
   it('should assume "module js" .mjs extension is type="module"', () => {
     expect(
       mainTest([
@@ -523,7 +672,7 @@ describe("modules", () => {
     );
   });
 
-  it("should create a pair of script tags for differential loading", () => {
+  it("should create a pair of script tags for differential loading (.js, .es2015.js)", () => {
     expect(
       mainTest(
         [
@@ -542,6 +691,28 @@ describe("modules", () => {
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script nomodule="" src="./path/to/my.js?v=123"></script><script type="module" src="./path/to/my.es2015.js?v=123"></script></body></html>'
+    );
+  });
+
+  it("should create a pair of script tags for differential loading (.js, .mjs)", () => {
+    expect(
+      mainTest(
+        [
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "path/to/my.mjs",
+        ],
+        read,
+        write,
+        stamper
+      )
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head></head><body><script nomodule="" src="./path/to/my.js?v=123"></script><script type="module" src="./path/to/my.mjs?v=123"></script></body></html>'
     );
   });
 });
@@ -730,47 +901,5 @@ describe("parseArgs", () => {
       css: ["./b.css"],
       ico: ["./c.ico"],
     });
-  });
-
-  it("should throw when --strict and unknown asset types", () => {
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo"])
-    ).toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.bar"])
-    ).toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.js.bar"])
-    ).toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--strict", "--assets", "foo.js", "foo.ts"])
-    ).toThrow();
-    expect(() =>
-      parseArgs([
-        ...REQUIRE_PARAMS,
-        "--strict",
-        "--assets",
-        "foo.js",
-        "foo.d.ts",
-      ])
-    ).toThrow();
-  });
-
-  it("should not throw when non --strict and unknown asset types", () => {
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--assets", "foo"])
-    ).not.toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--assets", "foo.bar"])
-    ).not.toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js.bar"])
-    ).not.toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js", "foo.ts"])
-    ).not.toThrow();
-    expect(() =>
-      parseArgs([...REQUIRE_PARAMS, "--assets", "foo.js", "foo.d.ts"])
-    ).not.toThrow();
   });
 });
