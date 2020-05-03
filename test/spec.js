@@ -717,6 +717,195 @@ describe("js modules", () => {
   });
 });
 
+describe("preloading", () => {
+  it("should support preload type=script (js)", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "path/to/my.js",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./path/to/my.js?v=123" as="script"></head><body></body></html>'
+    );
+  });
+
+  it("should support preload type=script (mjs)", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "path/to/my.mjs",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./path/to/my.mjs?v=123" as="script"></head><body></body></html>'
+    );
+  });
+
+  it("should support preload type=style", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "path/to/my.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./path/to/my.css?v=123" as="style"></head><body></body></html>'
+    );
+  });
+
+  it("should insert <link preload> before <link stylesheet> in <head>", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "path/to/my.css",
+        "--preload",
+        "path/to/my.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./path/to/my.css?v=123" as="style"><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>'
+    );
+  });
+
+  it("should support preload image types (ico, jpg, png, gif)", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "./my.ico",
+        "./my.jpg",
+        "./my.png",
+        "./my.gif",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./my.ico?v=123" as="image"><link rel="preload" href="./my.jpg?v=123" as="image"><link rel="preload" href="./my.png?v=123" as="image"><link rel="preload" href="./my.gif?v=123" as="image"></head><body></body></html>'
+    );
+  });
+
+  it("should normalize URLs", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "./rel.ico",
+        "rel.ico",
+        "rel/.././rel.ico",
+        "/abs.ico",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="/abs.ico?v=123" as="image"></head><body></body></html>'
+    );
+  });
+
+  it("should support external URLs", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--preload",
+        "http://foo.com/a.js",
+        "https://foo.com/a.js",
+        "https://foo.com/a.js?a=b",
+        "file://foo.com/a.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="preload" href="http://foo.com/a.js" as="script"><link rel="preload" href="https://foo.com/a.js" as="script"><link rel="preload" href="https://foo.com/a.js?a=b" as="script"><link rel="preload" href="file://foo.com/a.css" as="style"></head><body></body></html>'
+    );
+  });
+
+  it("should throw when --strict and unknown asset types", () => {
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--preload",
+        "foo",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--preload",
+        "foo.bar",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--preload",
+        "foo.js.bar",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--preload",
+        "foo.js",
+        "foo.ts",
+      ])
+    ).toThrow();
+
+    expect(() =>
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--strict",
+        "--preload",
+        "foo.js",
+        "foo.d.ts",
+      ])
+    ).toThrow();
+  });
+});
+
 describe("parseArgs", () => {
   const REQUIRE_PARAMS = ["--out", "foo.html", "--html", "in.html"];
 
@@ -847,7 +1036,13 @@ describe("parseArgs", () => {
   });
 
   it("should work with all args passed", () => {
-    const { outputFile, inputFile, assets, rootDirs } = parseArgs([
+    const {
+      outputFile,
+      inputFile,
+      assets,
+      preloadAssets,
+      rootDirs,
+    } = parseArgs([
       "--out",
       "./out",
       "--html",
@@ -858,27 +1053,40 @@ describe("parseArgs", () => {
       "--roots",
       "/c/",
       "/d/",
+      "--preload",
+      "./e.js",
+      "./f.css",
     ]);
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
     expect(assets).toEqual({ js: ["./a.js", "./b.js"] });
+    expect(preloadAssets).toEqual({ js: ["./e.js"], css: ["./f.css"] });
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
   it("should allow `--param=a b` in addition to `--param a b", () => {
-    const { outputFile, inputFile, assets, rootDirs } = parseArgs([
+    const {
+      outputFile,
+      inputFile,
+      assets,
+      preloadAssets,
+      rootDirs,
+    } = parseArgs([
       "--out=./out",
       "--html=./in",
       "--assets=./a.js",
       "./b.js",
       "--roots=/c/",
       "/d/",
+      "--preload=./e.js",
+      "./f.css",
     ]);
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
     expect(assets).toEqual({ js: ["./a.js", "./b.js"] });
+    expect(preloadAssets).toEqual({ js: ["./e.js"], css: ["./f.css"] });
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 

@@ -91,10 +91,32 @@ function createScriptElement(src, moduleName) {
   return treeAdapter.createElement("script", undefined, attrs);
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
+const PRELOAD_TYPES = Object.freeze({
+  js: "script",
+  mjs: "script",
+  css: "style",
+  ico: "image",
+  jpg: "image",
+  png: "image",
+  gif: "image",
+});
+function insertPreloads({ treeAdapter, head, toUrl }, paths, preloadAs) {
+  for (const p of paths) {
+    const link = treeAdapter.createElement("link", undefined, [
+      { name: "rel", value: "preload" },
+      { name: "href", value: toUrl(p) },
+      { name: "as", value: preloadAs },
+    ]);
+    treeAdapter.appendChild(head, link);
+  }
+}
+
 function parseArgs(cmdParams) {
   let inputFile;
   let outputFile;
   let assetsList = [];
+  let preloadAssetsList = [];
   let rootDirs = [];
   let verbose = false;
   let strict = false;
@@ -112,6 +134,10 @@ function parseArgs(cmdParams) {
     switch (params[i]) {
       case "--assets":
         [assetsList, i] = readVarArgs(params, i + 1);
+        break;
+
+      case "--preload":
+        [preloadAssetsList, i] = readVarArgs(params, i + 1);
         break;
 
       case "--strict":
@@ -144,6 +170,7 @@ function parseArgs(cmdParams) {
   }
 
   const assets = computeAssets(assetsList);
+  const preloadAssets = computeAssets(preloadAssetsList);
 
   // Normalize fs paths, assets done separately later
   rootDirs = rootDirs.map(normalizeDirPath);
@@ -153,7 +180,15 @@ function parseArgs(cmdParams) {
   // Always trim the longest root first
   rootDirs.sort((a, b) => b.length - a.length);
 
-  return { inputFile, outputFile, assets, rootDirs, strict, verbose };
+  return {
+    inputFile,
+    outputFile,
+    assets,
+    preloadAssets,
+    rootDirs,
+    strict,
+    verbose,
+  };
 }
 
 function stampNow(url) {
@@ -256,6 +291,7 @@ function main(
     inputFile,
     outputFile,
     assets,
+    preloadAssets,
     rootDirs,
     strict,
     verbose,
@@ -266,8 +302,11 @@ function main(
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
-  Object.keys(assets).forEach((type) =>
-    log("files (%s): %s", type, assets[type])
+  Object.entries(assets).forEach(([type, typeAssets]) =>
+    log("files (%s): %s", type, typeAssets)
+  );
+  Object.entries(preloadAssets).forEach(([type, typeAssets]) =>
+    log("preload files (%s): %s", type, typeAssets)
   );
 
   const document = parse5.parse(read(inputFile, { encoding: "utf-8" }), {
@@ -337,6 +376,16 @@ function main(
   }
 
   const utils = { treeAdapter, toUrl, body, head };
+
+  // Insertion of various asset preload types
+  for (const [type, prePaths] of Object.entries(preloadAssets)) {
+    const preloadAs = PRELOAD_TYPES[type];
+    if (preloadAs) {
+      insertPreloads(utils, prePaths, preloadAs);
+    } else if (strict) {
+      throw new Error(`Unknown preload type(${type}), paths(${prePaths})`);
+    }
+  }
 
   // Insertion of various asset types
   for (const [type, paths] of Object.entries(assets)) {

@@ -1,13 +1,20 @@
 # html-insert-assets
+
+## Overview
+
 Insert assets such as .js, .css into an HTML file.
 
-* .js files inserted at end of <body>
-* .css files inserted at end of <head>
-* .ico file inserted at end of <head>
+* .js and .mjs files inserted as `<script>` at end of `<body>`
+* .css files inserted as `<link rel="stylesheet">` at end of `<head>`
+* .ico file inserted as `<link rel="shortcut icon">` at end of `<head>`
+
+Preload assets such as as .js, .css, images (ico, jpg, png, gif) inserted as `<link rel="preload">`
 
 ## Examples
 
-Examples of functionality shared across asset types use .js for simplicity.
+### Assets
+
+Functionality shared across asset types using .js assets for simplicity.
 
 Basic relative paths:
 ```
@@ -93,6 +100,23 @@ html-insert-assets
 will insert:
 ```html
     <script src="/path/to/my.js"></script>
+```
+
+### Preloading files
+
+Prealoding assets that your page will need soon, which you want to start loading early in the page lifecycle. See https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content for a full description.
+
+Preloading some .js and .jpg files.
+```
+html-insert-assets
+    --html ./index.tmpl.html
+    --out ./index.html
+    --preload load-later.js large-image.jpg
+```
+will insert:
+```html
+<link rel="preload" href="./load-later.js">
+<link rel="preload" href="./large-image.jpg">
 ```
 
 ## Notes
