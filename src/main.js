@@ -2,6 +2,7 @@
 
 const parse5 = require("parse5");
 const treeAdapter = require("parse5/lib/tree-adapters/default");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const mkdirp = require("mkdirp");
@@ -78,6 +79,14 @@ function readVarArgs(params, i) {
   return [args, i - 1];
 }
 
+function readOptionalParam(params, i, defaultValue) {
+  if (i < params.length && !params[i].startsWith("--")) {
+    return [params[i], i];
+  }
+
+  return [defaultValue, i - 1];
+}
+
 function createScriptElement(src, moduleName) {
   const attrs = [];
   if (moduleName) {
@@ -120,6 +129,7 @@ function parseArgs(cmdParams) {
   let rootDirs = [];
   let verbose = false;
   let strict = false;
+  let stampType = "now";
 
   const params = cmdParams.reduce((a, p) => {
     if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
@@ -156,6 +166,10 @@ function parseArgs(cmdParams) {
         inputFile = params[++i];
         break;
 
+      case "--stamp":
+        [stampType, i] = readOptionalParam(params, i + 1, stampType);
+        break;
+
       case "--verbose":
         verbose = true;
         break;
@@ -186,17 +200,10 @@ function parseArgs(cmdParams) {
     assets,
     preloadAssets,
     rootDirs,
+    stampType,
     strict,
     verbose,
   };
-}
-
-function stampNow(url) {
-  if (!EXTERNAL_RE.test(url)) {
-    return `${url}?v=${NOW}`;
-  }
-
-  return url;
 }
 
 function insertScripts({ treeAdapter, body, toUrl }, paths) {
@@ -276,22 +283,77 @@ function newError(str, ...args) {
   return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
 }
 
+function fileLastModified(file) {
+  if (fs.existsSync(file)) {
+    return String(fs.statSync(file).mtime.getTime());
+  }
+
+  console.warn(
+    `html-insert-assets: filed to find ${file} to stamp. Will fallback to timestamp.`
+  );
+
+  return NOW;
+}
+
+function hashFile(file) {
+  if (fs.existsSync(file)) {
+    const data = fs.readFileSync(file);
+    return crypto
+      .createHash("sha1")
+      .update(data)
+      .digest("base64")
+      .replace(/[^a-z0-9]/gi, "");
+  }
+
+  console.warn(
+    `html-insert-assets: filed to find ${file} to stamp. Will fallback to timestamp.`
+  );
+
+  return NOW;
+}
+
+function createStamper(typeParam) {
+  const [type, value] = typeParam.split("=");
+
+  switch (type) {
+    case "none":
+      return () => "";
+
+    case "const":
+      return () => value;
+
+    case "now":
+      return () => NOW.slice(-value);
+
+    case "lastmod":
+      return (f) => fileLastModified(f).slice(-value);
+
+    case "hash":
+      return (f) => hashFile(f).slice(-value);
+
+    default:
+      throw new Error(`Invalid stamp type: ${typeParam}`);
+  }
+}
+
 function mkdirpWrite(filePath, value) {
   mkdirp.sync(path.dirname(filePath));
   fs.writeFileSync(filePath, value);
 }
 
-function main(params, write = mkdirpWrite, stamper = stampNow) {
+function main(params, write = mkdirpWrite) {
   const {
     inputFile,
     outputFile,
     assets,
     preloadAssets,
     rootDirs,
+    stampType,
     strict,
     verbose,
   } = parseArgs(params);
   const log = createLogger(verbose);
+  const stamper = createStamper(stampType);
 
   // Log the parsed params
   log("in: %s", inputFile);
@@ -358,17 +420,21 @@ function main(params, write = mkdirpWrite, stamper = stampNow) {
       return origPath;
     }
 
+    // Calculate the stamp on the origina fs-path
+    const stamp = stamper(origPath);
+
     execPath = normalizePath(execPath);
     execPath = removeExternal(execPath);
     execPath = removeRootPath(execPath);
     execPath = relativeToHtml(execPath);
     execPath = normalizePath(execPath);
+    execPath = stamp ? `${execPath}?v=${stamp}` : execPath;
 
     if (execPath !== origPath) {
       log("reduce: %s => %s", origPath, execPath);
     }
 
-    return stamper(execPath);
+    return execPath;
   }
 
   const utils = { treeAdapter, toUrl, body, head };
@@ -417,6 +483,9 @@ function main(params, write = mkdirpWrite, stamper = stampNow) {
 module.exports = {
   parseArgs,
   main,
+
+  // For testing
+  __NOW: NOW,
 };
 
 if (require.main === module) {

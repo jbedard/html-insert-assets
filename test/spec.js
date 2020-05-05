@@ -1,7 +1,19 @@
 const path = require("path");
-const { main, parseArgs } = require("../src/main");
+const { main, parseArgs, __NOW } = require("../src/main");
 
 const inFile = "./test/data/index-template.html";
+
+const JS_ASSET_ALERT = "./test/data/assets/alert.js";
+const JS_ASSET_ALERT_HASH = "6yOVKodXSr6FwCnpf6HWhXZl2w"; // original: "6yOVKod/XSr6FwCnpf6HWhXZl2w=";
+
+const MJS_ASSET_ANSWER = "./test/data/assets/answer.mjs";
+const MJS_ASSET_ANSWER_HASH = "M2lyTaM7ZJXfwxvnwmsz2vvbk"; // original: "M2lyTaM7ZJXfwxvnwmsz2v+v+bk=";
+
+const ICO_ASSET_GITHUB = "./test/data/assets/github.ico";
+const ICO_ASSET_GITHUB_HASH = "B1oibWKIpml3j2X37M3ZZ3CSU"; // original: "B+1oi+bWKIpml3j2X37M3ZZ3CSU=";
+
+const CSS_ASSET_RESET = "./test/data/assets/reset.css";
+const CSS_ASSET_RESET_HASH = "D3C2hyvo84Oc7dvX3WUThJ6oUl4"; // original: "D3C2hyvo84Oc7dvX3WUThJ6oUl4=";
 
 let output;
 function write(_, content) {
@@ -10,16 +22,15 @@ function write(_, content) {
 
 afterEach(() => (output = NaN));
 
-function stamper(url) {
-  return `${url}?v=123`;
-}
-
 function mainTest(args) {
-  return main(args, write, stamper);
+  // Disable hashing for basic tests
+  args.push("--stamp", "none");
+
+  return main(args, write);
 }
 
 function scriptHtml(script) {
-  return `<html><head></head><body><script src="${script}?v=123"></script></body></html>`;
+  return `<html><head></head><body><script src="${script}"></script></body></html>`;
 }
 
 describe("base", () => {
@@ -39,7 +50,7 @@ describe("base", () => {
       "./././b.js",
     ]);
     expect(output).toBe(
-      '<html><head></head><body><script src="./a.js?v=123"></script><script src="./b.js?v=123"></script></body></html>'
+      '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script></body></html>'
     );
   });
 
@@ -166,7 +177,7 @@ describe("js assets", () => {
       "c.js",
     ]);
     expect(output).toBe(
-      '<html><head></head><body><script src="./a.js?v=123"></script><script src="/b.js?v=123"></script><script src="./c.js?v=123"></script></body></html>'
+      '<html><head></head><body><script src="./a.js"></script><script src="/b.js"></script><script src="./c.js"></script></body></html>'
     );
   });
 
@@ -181,7 +192,7 @@ describe("js assets", () => {
         "./path/to/my.js",
       ])
     ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js", stamper));
+    expect(output).toBe(scriptHtml("./path/to/my.js"));
   });
 
   it("should inject .js as script tag when --assets= is used", () => {
@@ -194,7 +205,7 @@ describe("js assets", () => {
         "--assets=path/to/my.js",
       ])
     ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js", stamper));
+    expect(output).toBe(scriptHtml("./path/to/my.js"));
   });
 
   it("should inject relative .js (no-prefix) as script with path relative to output (no-prefix)", () => {
@@ -208,7 +219,7 @@ describe("js assets", () => {
         "path/to/my.js",
       ])
     ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js", stamper));
+    expect(output).toBe(scriptHtml("./path/to/my.js"));
   });
 
   it("should inject relative .js as script tag relative to output subdir", () => {
@@ -284,7 +295,7 @@ describe("js assets", () => {
         "/root/dir",
       ])
     ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js", stamper));
+    expect(output).toBe(scriptHtml("./path/to/my.js"));
   });
 
   it("should inject relative .js as script with path relative subdir with absolute --out also as a root", () => {
@@ -300,7 +311,7 @@ describe("js assets", () => {
         "/root/dir",
       ])
     ).toBe(0);
-    expect(output).toBe(scriptHtml("../path/to/my.js", stamper));
+    expect(output).toBe(scriptHtml("../path/to/my.js"));
   });
 
   it("should inject relative .js as script tag with absolute path to root dir (same dir)", () => {
@@ -429,35 +440,11 @@ describe("js assets", () => {
           "http://foo.com/bar.js",
           "file://local/file.js",
         ],
-        write,
-        stamper
+        write
       )
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>'
-    );
-  });
-
-  it("should insert non-local URLs with params as-is", () => {
-    expect(
-      mainTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--assets",
-          "https://ga.com/foo.js?v=123",
-          "https://ga.com/foo.js?v=123&c",
-          "http://foo.com/bar.js?v=123&a=asdf",
-          "file://local/file.js?asdf",
-        ],
-        write,
-        stamper
-      )
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script src="https://ga.com/foo.js?v=123"></script><script src="https://ga.com/foo.js?v=123&amp;c"></script><script src="http://foo.com/bar.js?v=123&amp;a=asdf"></script><script src="file://local/file.js?asdf"></script></body></html>'
     );
   });
 
@@ -477,12 +464,11 @@ describe("js assets", () => {
           "path/to/e3.js",
           "file://local/file.js",
         ],
-        write,
-        stamper
+        write
       )
     ).toBe(0);
     expect(output).toBe(
-      '<html><head></head><body><script src="./path/to/e1.js?v=123"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js?v=123"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js?v=123"></script><script src="file://local/file.js"></script></body></html>'
+      '<html><head></head><body><script src="./path/to/e1.js"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js"></script><script src="file://local/file.js"></script></body></html>'
     );
   });
 
@@ -520,7 +506,7 @@ describe("css assets", () => {
       "c.css",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./a.css?v=123"><link rel="stylesheet" href="/b.css?v=123"><link rel="stylesheet" href="./c.css?v=123"></head><body></body></html>'
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="/b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
     );
   });
 
@@ -536,7 +522,7 @@ describe("css assets", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>'
+      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
     );
   });
 
@@ -555,7 +541,7 @@ describe("css assets", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./my.css?v=123"></head><body></body></html>'
+      '<html><head><link rel="stylesheet" href="./my.css"></head><body></body></html>'
     );
   });
 
@@ -570,7 +556,7 @@ describe("css assets", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>'
+      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
     );
   });
 });
@@ -588,7 +574,7 @@ describe("ico assets", () => {
       "c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico?v=123"><link rel="shortcut icon" type="image/ico" href="/b.ico?v=123"><link rel="shortcut icon" type="image/ico" href="./c.ico?v=123"></head><body></body></html>'
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="/b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
     );
   });
 
@@ -604,7 +590,7 @@ describe("ico assets", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico?v=123"></head><body></body></html>'
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
     );
   });
 
@@ -623,7 +609,7 @@ describe("ico assets", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico?v=123"></head><body></body></html>'
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico"></head><body></body></html>'
     );
   });
 });
@@ -641,7 +627,7 @@ describe("js modules", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head></head><body><script type="module" src="./path/to/my.mjs?v=123"></script></body></html>'
+      '<html><head></head><body><script type="module" src="./path/to/my.mjs"></script></body></html>'
     );
   });
 
@@ -657,7 +643,7 @@ describe("js modules", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head></head><body><script type="module" src="./path/to/my.es2015.js?v=123"></script></body></html>'
+      '<html><head></head><body><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
     );
   });
 
@@ -673,12 +659,11 @@ describe("js modules", () => {
           "path/to/my.js",
           "path/to/my.es2015.js",
         ],
-        write,
-        stamper
+        write
       )
     ).toBe(0);
     expect(output).toBe(
-      '<html><head></head><body><script nomodule="" src="./path/to/my.js?v=123"></script><script type="module" src="./path/to/my.es2015.js?v=123"></script></body></html>'
+      '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
     );
   });
 
@@ -694,12 +679,11 @@ describe("js modules", () => {
           "path/to/my.js",
           "path/to/my.mjs",
         ],
-        write,
-        stamper
+        write
       )
     ).toBe(0);
     expect(output).toBe(
-      '<html><head></head><body><script nomodule="" src="./path/to/my.js?v=123"></script><script type="module" src="./path/to/my.mjs?v=123"></script></body></html>'
+      '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
     );
   });
 });
@@ -717,7 +701,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./path/to/my.js?v=123" as="script"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./path/to/my.js" as="script"></head><body></body></html>'
     );
   });
 
@@ -733,7 +717,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./path/to/my.mjs?v=123" as="script"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./path/to/my.mjs" as="script"></head><body></body></html>'
     );
   });
 
@@ -749,7 +733,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./path/to/my.css?v=123" as="style"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./path/to/my.css" as="style"></head><body></body></html>'
     );
   });
 
@@ -767,7 +751,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./path/to/my.css?v=123" as="style"><link rel="stylesheet" href="./path/to/my.css?v=123"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./path/to/my.css" as="style"><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
     );
   });
 
@@ -786,7 +770,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./my.ico?v=123" as="image"><link rel="preload" href="./my.jpg?v=123" as="image"><link rel="preload" href="./my.png?v=123" as="image"><link rel="preload" href="./my.gif?v=123" as="image"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./my.ico" as="image"><link rel="preload" href="./my.jpg" as="image"><link rel="preload" href="./my.png" as="image"><link rel="preload" href="./my.gif" as="image"></head><body></body></html>'
     );
   });
 
@@ -805,7 +789,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="./rel.ico?v=123" as="image"><link rel="preload" href="/abs.ico?v=123" as="image"></head><body></body></html>'
+      '<html><head><link rel="preload" href="./rel.ico" as="image"><link rel="preload" href="./rel.ico" as="image"><link rel="preload" href="./rel.ico" as="image"><link rel="preload" href="/abs.ico" as="image"></head><body></body></html>'
     );
   });
 
@@ -890,6 +874,294 @@ describe("preloading", () => {
         "foo.d.ts",
       ])
     ).toThrow();
+  });
+});
+
+describe("stamping", () => {
+  function stampTest(args) {
+    return main(args, write);
+  }
+
+  it("should support stamping with a constant", () => {
+    expect(
+      stampTest(
+        [
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--stamp",
+          "const=42",
+          "--assets",
+          "./script.js",
+          "./script-module.mjs",
+          "./style.css",
+          "./favicon.ico",
+        ],
+        write
+      )
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="shortcut icon" type="image/ico" href="./favicon.ico?v=42"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
+    );
+  });
+
+  it("should NOT add stamp to external URLs", () => {
+    expect(
+      stampTest(
+        [
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--stamp",
+          "const=42",
+          "--assets",
+          "./local.js",
+          "https://ga.com/foo.js",
+          "https://ga.com/foo.js",
+          "http://foo.com/bar.css",
+          "file://local/file.js",
+        ],
+        write
+      )
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="http://foo.com/bar.css"></head><body><script src="./local.js?v=42"></script><script src="https://ga.com/foo.js"></script><script src="https://ga.com/foo.js"></script><script src="file://local/file.js"></script></body></html>'
+    );
+  });
+
+  it("should insert non-local URLs with params as-is", () => {
+    expect(
+      stampTest(
+        [
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--stamp",
+          "const=42",
+          "--assets",
+          "./local.js",
+          "https://ga.com/foo.js?p=v",
+          "https://ga.com/foo.js?p=v&c",
+          "http://foo.com/bar.css?p=v&a=asdf",
+          "file://local/file.js?asdf",
+        ],
+        write
+      )
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="http://foo.com/bar.css?p=v&amp;a=asdf"></head><body><script src="./local.js?v=42"></script><script src="https://ga.com/foo.js?p=v"></script><script src="https://ga.com/foo.js?p=v&amp;c"></script><script src="file://local/file.js?asdf"></script></body></html>'
+    );
+  });
+
+  it("should support stamping by current timestamp", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "now",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
+    );
+  });
+
+  it("should default to stamping by current timestamp", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
+    );
+  });
+
+  it("should support stamping with a substring of current timestamp", () => {
+    const NOW_5_SUBSET = __NOW.slice(-5);
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "now=5",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+    );
+  });
+
+  it("should support stamping with a substring of current timestamp via negative length", () => {
+    const NOW_5_SUBSET = __NOW.slice(5);
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "now=-5",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+    );
+  });
+
+  it("should support stamping by file lastmod", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "lastmod",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(/\/reset\.css\?v=\d{13}"/.test(output)).toBeTrue();
+    expect(/\/github\.ico\?v=\d{13}"/.test(output)).toBeTrue();
+    expect(/\/alert\.js\?v=\d{13}"/.test(output)).toBeTrue();
+    expect(/\/answer\.mjs\?v=\d{13}"/.test(output)).toBeTrue();
+
+    expect(output.match(/\/reset\.css\?v=(\d{13})"/)[0]).not.toBe(__NOW);
+  });
+
+  it("should support stamping with a substring of file lastmod", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "lastmod=5",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(/\/reset\.css\?v=\d{5}"/.test(output)).toBeTrue();
+    expect(/\/github\.ico\?v=\d{5}"/.test(output)).toBeTrue();
+    expect(/\/alert\.js\?v=\d{5}"/.test(output)).toBeTrue();
+    expect(/\/answer\.mjs\?v=\d{5}"/.test(output)).toBeTrue();
+  });
+
+  it("should support stamping by file hash", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "hash",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH}"></script></body></html>`
+    );
+  });
+
+  it("should support stamping with a substring of file hash", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "hash=5",
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
+        -5
+      )}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+        -5
+      )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
+        -5
+      )}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH.slice(
+        -5
+      )}"></script></body></html>`
+    );
+  });
+
+  it("should fallback to current timestamp when a file can not be found", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "hash",
+        "--assets",
+        CSS_ASSET_RESET,
+        "./foo.js",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"></head><body><script src="./foo.js?v=${__NOW}"></script></body></html>`
+    );
   });
 });
 

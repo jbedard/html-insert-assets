@@ -119,6 +119,11 @@ will insert:
 <link rel="preload" href="./large-image.jpg">
 ```
 
+### Stamping
+
+Adds paramaters to inserted URLs to fingerprint URLs to allow HTTP caching with reliable cache busting when resources change. See https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#invalidating_and_updating_cached_responses for a detailed explanation.
+
+
 ## Notes
 
 Originally forked from https://github.com/bazelbuild/rules_nodejs/tree/0.41.0/packages/inject-html.
