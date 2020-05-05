@@ -129,7 +129,7 @@ function parseArgs(cmdParams) {
   let rootDirs = [];
   let verbose = false;
   let strict = false;
-  let stampType = "now";
+  let stampType = "hash=8";
 
   const params = cmdParams.reduce((a, p) => {
     if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {

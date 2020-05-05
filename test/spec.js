@@ -978,27 +978,6 @@ describe("stamping", () => {
     );
   });
 
-  it("should default to stamping by current timestamp", () => {
-    expect(
-      stampTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--stamp",
-        "--assets",
-        JS_ASSET_ALERT,
-        MJS_ASSET_ANSWER,
-        CSS_ASSET_RESET,
-        ICO_ASSET_GITHUB,
-      ])
-    ).toBe(0);
-
-    expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
-    );
-  });
-
   it("should support stamping with a substring of current timestamp", () => {
     const NOW_5_SUBSET = __NOW.slice(-5);
     expect(
@@ -1093,7 +1072,7 @@ describe("stamping", () => {
     expect(/\/answer\.mjs\?v=\d{5}"/.test(output)).toBeTrue();
   });
 
-  it("should support stamping by file hash", () => {
+  it("should support stamping by file hash of", () => {
     expect(
       stampTest([
         "--out",
@@ -1161,6 +1140,34 @@ describe("stamping", () => {
     ).toBe(0);
     expect(output).toBe(
       `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"></head><body><script src="./foo.js?v=${__NOW}"></script></body></html>`
+    );
+  });
+
+  it("should default to stamping by hash", () => {
+    expect(
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        JS_ASSET_ALERT,
+        MJS_ASSET_ANSWER,
+        CSS_ASSET_RESET,
+        ICO_ASSET_GITHUB,
+      ])
+    ).toBe(0);
+
+    expect(output).toBe(
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
+        -8
+      )}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+        -8
+      )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
+        -8
+      )}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH.slice(
+        -8
+      )}"></script></body></html>`
     );
   });
 });
