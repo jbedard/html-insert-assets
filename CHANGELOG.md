@@ -1,3 +1,13 @@
+# [0.9.0](https://github.com/jbedard/html-insert-assets/compare/v0.8.0...v0.9.0) (2020-05-05)
+
+
+### Features
+
+* **preload:** add support for preload requests ([70ac29f](https://github.com/jbedard/html-insert-assets/commit/70ac29f068d63a4e97d8a277ab14a8236736c27a)), closes [#7](https://github.com/jbedard/html-insert-assets/issues/7)
+* **stamp:** add various stamping options: ([6aff234](https://github.com/jbedard/html-insert-assets/commit/6aff234619e44f9ee1f7bdc77b833eb811d1b84a)), closes [#4](https://github.com/jbedard/html-insert-assets/issues/4)
+
+
+
 # [0.8.0](https://github.com/jbedard/html-insert-assets/compare/v0.7.0...v0.8.0) (2020-04-05)
 
 
