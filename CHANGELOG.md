@@ -1,3 +1,12 @@
+# [0.10.0](https://github.com/jbedard/html-insert-assets/compare/v0.9.0...v0.10.0) (2020-06-12)
+
+
+### Features
+
+* **cli:** provide npm package bin entry for running via cli ([ce2c8ae](https://github.com/jbedard/html-insert-assets/commit/ce2c8ae67c0594744ce09a7565e311f1f529ff44))
+
+
+
 # [0.9.0](https://github.com/jbedard/html-insert-assets/compare/v0.8.0...v0.9.0) (2020-05-05)
 
 
