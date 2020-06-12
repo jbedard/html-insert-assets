@@ -487,9 +487,3 @@ module.exports = {
   // For testing
   __NOW: NOW,
 };
-
-if (require.main === module) {
-  // We always require the arguments are encoded into a flagfile
-  // so that we don't exhaust the command-line limit.
-  process.exitCode = main(process.argv.slice(2));
-}

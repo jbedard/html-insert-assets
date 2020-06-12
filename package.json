@@ -8,9 +8,9 @@
   },
   "author": "Jason Bedard",
   "license": "MIT",
-  "main": "./src/main.js",
+  "main": "./src/run.js",
   "bin": {
-    "html-insert-assets": "./src/main.js"
+    "html-insert-assets": "./bin/html-insert-assets"
   },
   "scripts": {
     "test": "jasmine test/*.js",
