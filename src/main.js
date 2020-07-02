@@ -1,6 +1,8 @@
 // Originally forked from https://github.com/bazelbuild/rules_nodejs/tree/0.41.0/packages/inject-html
+"use strict";
 
 const parse5 = require("parse5");
+/** @type parse5.TreeAdapter */
 const treeAdapter = require("parse5/lib/tree-adapters/default");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -14,6 +16,10 @@ const FILE_TYPE_RE = /\.([a-z]+)$/i;
 const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
 const NOW = String(Date.now());
 
+/**
+ * @param {string} ext
+ * @returns {string}
+ */
 function fileExtToType(ext) {
   return ext === "mjs" ? "js" : ext;
 }
@@ -30,22 +36,30 @@ function computeAssets(assets) {
   }, {});
 }
 
+/**
+ * @param {parse5.Node} d
+ * @param {string} name
+ * @returns {parse5.DefaultTreeNode|undefined}
+ */
 function findElementByName(d, name) {
   if (treeAdapter.isTextNode(d)) return undefined;
-  if (d.tagName && d.tagName.toLowerCase() === name) {
+
+  if ("nodeName" in d && d.nodeName.toLowerCase() === name) {
     return d;
   }
-  if (!treeAdapter.getChildNodes(d)) {
-    return undefined;
-  }
-  for (let i = 0; i < treeAdapter.getChildNodes(d).length; i++) {
-    const f = treeAdapter.getChildNodes(d)[i];
+
+  for (const f of treeAdapter.getChildNodes(d)) {
     const result = findElementByName(f, name);
     if (result) return result;
   }
+
   return undefined;
 }
 
+/**
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
   p = path.normalize(p);
   // Convert paths to posix
@@ -56,6 +70,10 @@ function normalizePath(p) {
   return p;
 }
 
+/**
+ * @param {string} d
+ * @returns {string}
+ */
 function normalizeDirPath(d) {
   d = normalizePath(d);
   if (!d.endsWith("/")) {
@@ -64,6 +82,10 @@ function normalizeDirPath(d) {
   return d;
 }
 
+/**
+ * @param {string} p
+ * @returns {string}
+ */
 function removeExternal(p) {
   if (p.startsWith("./external/")) {
     p = normalizePath(p.substring("./external/".length));
@@ -71,6 +93,11 @@ function removeExternal(p) {
   return p;
 }
 
+/**
+ * @param {any[]}  params
+ * @param {number} i
+ * @returns {[any[], number]}
+ */
 function readVarArgs(params, i) {
   const args = [];
   while (i < params.length && !params[i].startsWith("--")) {
@@ -79,6 +106,12 @@ function readVarArgs(params, i) {
   return [args, i - 1];
 }
 
+/**
+ * @param {any[]} params
+ * @param {number} i
+ * @param {any | undefined} defaultValue
+ * @returns {[any, number]}
+ */
 function readOptionalParam(params, i, defaultValue) {
   if (i < params.length && !params[i].startsWith("--")) {
     return [params[i], i];
@@ -87,6 +120,10 @@ function readOptionalParam(params, i, defaultValue) {
   return [defaultValue, i - 1];
 }
 
+/**
+ * @param {string} src
+ * @param {boolean} [moduleName]
+ */
 function createScriptElement(src, moduleName) {
   const attrs = [];
   if (moduleName) {
@@ -97,7 +134,7 @@ function createScriptElement(src, moduleName) {
 
   attrs.push({ name: "src", value: src });
 
-  return treeAdapter.createElement("script", undefined, attrs);
+  return treeAdapter.createElement("script", "", attrs);
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
@@ -110,9 +147,9 @@ const PRELOAD_TYPES = Object.freeze({
   png: "image",
   gif: "image",
 });
-function insertPreloads({ treeAdapter, head, toUrl }, paths, preloadAs) {
+function insertPreloads({ head, toUrl }, paths, preloadAs) {
   for (const p of paths) {
-    const link = treeAdapter.createElement("link", undefined, [
+    const link = treeAdapter.createElement("link", "", [
       { name: "rel", value: "preload" },
       { name: "href", value: toUrl(p) },
       { name: "as", value: preloadAs },
@@ -121,9 +158,12 @@ function insertPreloads({ treeAdapter, head, toUrl }, paths, preloadAs) {
   }
 }
 
+/**
+ * @param {string[]} cmdParams
+ */
 function parseArgs(cmdParams) {
-  let inputFile;
-  let outputFile;
+  let inputFile = "";
+  let outputFile = "";
   let assetsList = [];
   let preloadAssetsList = [];
   let rootDirs = [];
@@ -131,14 +171,17 @@ function parseArgs(cmdParams) {
   let strict = false;
   let stampType = "hash=8";
 
-  const params = cmdParams.reduce((a, p) => {
-    if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
-      a.push(...p.split("=", 2));
-    } else {
-      a.push(p);
-    }
-    return a;
-  }, []);
+  const params = cmdParams.reduce(
+    /** @param {string[]} a */ (a, p) => {
+      if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
+        a.push(...p.split("=", 2));
+      } else {
+        a.push(p);
+      }
+      return a;
+    },
+    []
+  );
 
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
@@ -206,7 +249,7 @@ function parseArgs(cmdParams) {
   };
 }
 
-function insertScripts({ treeAdapter, body, toUrl }, paths) {
+function insertScripts({ body, toUrl }, paths) {
   // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
   // ESModule script we add a 'nomodule' attribute
   function hasMatchingModule(file) {
@@ -244,9 +287,9 @@ function insertScripts({ treeAdapter, body, toUrl }, paths) {
   }
 }
 
-function insertCss({ treeAdapter, head, toUrl }, paths) {
+function insertCss({ head, toUrl }, paths) {
   for (const css of paths) {
-    const stylesheet = treeAdapter.createElement("link", undefined, [
+    const stylesheet = treeAdapter.createElement("link", "", [
       { name: "rel", value: "stylesheet" },
       { name: "href", value: toUrl(css) },
     ]);
@@ -254,9 +297,9 @@ function insertCss({ treeAdapter, head, toUrl }, paths) {
   }
 }
 
-function insertFavicons({ treeAdapter, head, toUrl }, paths) {
+function insertFavicons({ head, toUrl }, paths) {
   for (const ico of paths) {
-    const icoLink = treeAdapter.createElement("link", undefined, [
+    const icoLink = treeAdapter.createElement("link", "", [
       { name: "rel", value: "shortcut icon" },
       { name: "type", value: "image/ico" },
       { name: "href", value: toUrl(ico) },
@@ -265,6 +308,10 @@ function insertFavicons({ treeAdapter, head, toUrl }, paths) {
   }
 }
 
+/**
+ * @param {boolean} verbose
+ * @returns {(msg: string, ...args: any[]) => void}
+ */
 function createLogger(verbose) {
   if (!verbose) {
     return () => {};
@@ -275,14 +322,26 @@ function createLogger(verbose) {
   };
 }
 
+/**
+ * @param {string} str
+ * @param  {...any[]} args
+ */
 function warn(str, ...args) {
   console.warn(`${NPM_NAME}: ${str}`, ...args);
 }
 
+/**
+ * @param {string} str
+ * @param  {...any[]} args
+ */
 function newError(str, ...args) {
   return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
 }
 
+/**
+ * @param {string} file
+ * @returns {string}
+ */
 function fileLastModified(file) {
   if (fs.existsSync(file)) {
     return String(fs.statSync(file).mtime.getTime());
@@ -295,6 +354,10 @@ function fileLastModified(file) {
   return NOW;
 }
 
+/**
+ * @param {string} file
+ * @returns {string}
+ */
 function hashFile(file) {
   if (fs.existsSync(file)) {
     const data = fs.readFileSync(file);
@@ -312,6 +375,10 @@ function hashFile(file) {
   return NOW;
 }
 
+/**
+ * @param {string} typeParam
+ * @returns {(path: string) => string}
+ */
 function createStamper(typeParam) {
   const [type, value] = typeParam.split("=");
 
@@ -336,11 +403,19 @@ function createStamper(typeParam) {
   }
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} value
+ */
 function mkdirpWrite(filePath, value) {
   mkdirp.sync(path.dirname(filePath));
   fs.writeFileSync(filePath, value);
 }
 
+/**
+ * @param {string[]} params
+ * @param {mkdirpWrite} write
+ */
 function main(params, write = mkdirpWrite) {
   const {
     inputFile,
@@ -381,6 +456,10 @@ function main(params, write = mkdirpWrite) {
     throw newError("No <head> tag found in HTML document");
   }
 
+  /**
+   * @param {string} p
+   * @returns {string}
+   */
   function removeRootPath(p) {
     for (const r of rootDirs) {
       if (p.startsWith(r)) {
@@ -392,6 +471,10 @@ function main(params, write = mkdirpWrite) {
 
   const outputDir = normalizeDirPath(path.dirname(outputFile));
   const rootedOutputDir = removeRootPath(outputDir).replace(/^\//, "./");
+  /**
+   * @param {string} p
+   * @returns boolean
+   */
   function relativeToHtml(p) {
     // Ignore absolute
     if (path.isAbsolute(p)) {
@@ -411,7 +494,7 @@ function main(params, write = mkdirpWrite) {
    * Leaves external URLs as-is.
    *
    * @param {string} origPath the path to convert to a normalized URL
-   * @return {string} the normalized URL
+   * @returns {string} the normalized URL
    */
   function toUrl(origPath) {
     let execPath = origPath;
@@ -437,7 +520,7 @@ function main(params, write = mkdirpWrite) {
     return execPath;
   }
 
-  const utils = { treeAdapter, toUrl, body, head };
+  const utils = { toUrl, body, head };
 
   // Insertion of various asset preload types
   for (const [type, prePaths] of Object.entries(preloadAssets)) {
@@ -476,7 +559,7 @@ function main(params, write = mkdirpWrite) {
   }
 
   const content = parse5.serialize(document, { treeAdapter });
-  write(outputFile, content, { encoding: "utf-8" });
+  write(outputFile, content);
   return 0;
 }
 

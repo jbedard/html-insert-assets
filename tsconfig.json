@@ -1,0 +1,14 @@
+{
+    "include": ["src/*.js", "test/*.js"],
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "alwaysStrict": true,
+        "noEmit": true,
+        "strict": true,
+        "noImplicitAny": false,
+        "module": "commonjs",
+        "moduleResolution": "Node",
+        "lib": ["ES2015"]
+    }
+}

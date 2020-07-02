@@ -1,3 +1,5 @@
+"use strict";
+
 const path = require("path");
 const { main, parseArgs, __NOW } = require("../src/main");
 
@@ -20,7 +22,7 @@ function write(_, content) {
   output = content;
 }
 
-afterEach(() => (output = NaN));
+afterEach(() => (output = undefined));
 
 function mainTest(args) {
   // Disable hashing for basic tests
@@ -429,19 +431,16 @@ describe("js assets", () => {
 
   it("should insert non-local URLs as-is", () => {
     expect(
-      mainTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--assets",
-          "https://ga.com/foo.js",
-          "http://foo.com/bar.js",
-          "file://local/file.js",
-        ],
-        write
-      )
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "https://ga.com/foo.js",
+        "http://foo.com/bar.js",
+        "file://local/file.js",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>'
@@ -450,22 +449,19 @@ describe("js assets", () => {
 
   it("should maintain <script> order across local vs non-local URLs", () => {
     expect(
-      mainTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--assets",
-          "path/to/e1.js",
-          "https://ga.com/foo.js",
-          "path/to/e2.js",
-          "http://foo.com/bar.js",
-          "path/to/e3.js",
-          "file://local/file.js",
-        ],
-        write
-      )
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "path/to/e1.js",
+        "https://ga.com/foo.js",
+        "path/to/e2.js",
+        "http://foo.com/bar.js",
+        "path/to/e3.js",
+        "file://local/file.js",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script src="./path/to/e1.js"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js"></script><script src="file://local/file.js"></script></body></html>'
@@ -649,18 +645,15 @@ describe("js modules", () => {
 
   it("should create a pair of script tags for differential loading (.js, .es2015.js)", () => {
     expect(
-      mainTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--assets",
-          "path/to/my.js",
-          "path/to/my.es2015.js",
-        ],
-        write
-      )
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "path/to/my.js",
+        "path/to/my.es2015.js",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
@@ -669,18 +662,15 @@ describe("js modules", () => {
 
   it("should create a pair of script tags for differential loading (.js, .mjs)", () => {
     expect(
-      mainTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--assets",
-          "path/to/my.js",
-          "path/to/my.mjs",
-        ],
-        write
-      )
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "path/to/my.js",
+        "path/to/my.mjs",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
@@ -884,22 +874,19 @@ describe("stamping", () => {
 
   it("should support stamping with a constant", () => {
     expect(
-      stampTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--stamp",
-          "const=42",
-          "--assets",
-          "./script.js",
-          "./script-module.mjs",
-          "./style.css",
-          "./favicon.ico",
-        ],
-        write
-      )
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "const=42",
+        "--assets",
+        "./script.js",
+        "./script-module.mjs",
+        "./style.css",
+        "./favicon.ico",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="shortcut icon" type="image/ico" href="./favicon.ico?v=42"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
@@ -908,23 +895,20 @@ describe("stamping", () => {
 
   it("should NOT add stamp to external URLs", () => {
     expect(
-      stampTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--stamp",
-          "const=42",
-          "--assets",
-          "./local.js",
-          "https://ga.com/foo.js",
-          "https://ga.com/foo.js",
-          "http://foo.com/bar.css",
-          "file://local/file.js",
-        ],
-        write
-      )
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "const=42",
+        "--assets",
+        "./local.js",
+        "https://ga.com/foo.js",
+        "https://ga.com/foo.js",
+        "http://foo.com/bar.css",
+        "file://local/file.js",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head><link rel="stylesheet" href="http://foo.com/bar.css"></head><body><script src="./local.js?v=42"></script><script src="https://ga.com/foo.js"></script><script src="https://ga.com/foo.js"></script><script src="file://local/file.js"></script></body></html>'
@@ -933,23 +917,20 @@ describe("stamping", () => {
 
   it("should insert non-local URLs with params as-is", () => {
     expect(
-      stampTest(
-        [
-          "--out",
-          "index.html",
-          "--html",
-          inFile,
-          "--stamp",
-          "const=42",
-          "--assets",
-          "./local.js",
-          "https://ga.com/foo.js?p=v",
-          "https://ga.com/foo.js?p=v&c",
-          "http://foo.com/bar.css?p=v&a=asdf",
-          "file://local/file.js?asdf",
-        ],
-        write
-      )
+      stampTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stamp",
+        "const=42",
+        "--assets",
+        "./local.js",
+        "https://ga.com/foo.js?p=v",
+        "https://ga.com/foo.js?p=v&c",
+        "http://foo.com/bar.css?p=v&a=asdf",
+        "file://local/file.js?asdf",
+      ])
     ).toBe(0);
     expect(output).toBe(
       '<html><head><link rel="stylesheet" href="http://foo.com/bar.css?p=v&amp;a=asdf"></head><body><script src="./local.js?v=42"></script><script src="https://ga.com/foo.js?p=v"></script><script src="https://ga.com/foo.js?p=v&amp;c"></script><script src="file://local/file.js?asdf"></script></body></html>'
