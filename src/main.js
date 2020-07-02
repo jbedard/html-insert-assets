@@ -332,7 +332,7 @@ function createStamper(typeParam) {
       return (f) => hashFile(f).slice(-value);
 
     default:
-      throw new Error(`Invalid stamp type: ${typeParam}`);
+      throw newError(`Invalid stamp type: ${typeParam}`);
   }
 }
 
@@ -445,7 +445,7 @@ function main(params, write = mkdirpWrite) {
     if (preloadAs) {
       insertPreloads(utils, prePaths, preloadAs);
     } else if (strict) {
-      throw new Error(`Unknown preload type(${type}), paths(${prePaths})`);
+      throw newError(`Unknown preload type(${type}), paths(${prePaths})`);
     }
   }
 
