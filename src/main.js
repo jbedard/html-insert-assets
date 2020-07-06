@@ -289,7 +289,7 @@ function fileLastModified(file) {
   }
 
   console.warn(
-    `html-insert-assets: filed to find ${file} to stamp. Will fallback to timestamp.`
+    `html-insert-assets: failed to find ${file} to stamp. Will fallback to timestamp.`
   );
 
   return NOW;
@@ -306,7 +306,7 @@ function hashFile(file) {
   }
 
   console.warn(
-    `html-insert-assets: filed to find ${file} to stamp. Will fallback to timestamp.`
+    `html-insert-assets: failed to find ${file} to stamp. Will fallback to timestamp.`
   );
 
   return NOW;
