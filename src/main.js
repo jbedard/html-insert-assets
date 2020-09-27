@@ -77,7 +77,7 @@ function normalizePath(p) {
 function normalizeDirPath(d) {
   d = normalizePath(d);
   if (!d.endsWith("/")) {
-    d = d + "/";
+    d = `${d}/`;
   }
   return d;
 }
@@ -88,7 +88,7 @@ function normalizeDirPath(d) {
  */
 function removeExternal(p) {
   if (p.startsWith("./external/")) {
-    p = normalizePath(p.substring("./external/".length));
+    p = normalizePath(p.slice("./external/".length));
   }
   return p;
 }
@@ -253,9 +253,9 @@ function insertScripts({ body, toUrl }, paths) {
   // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
   // ESModule script we add a 'nomodule' attribute
   function hasMatchingModule(file) {
-    const noExt = file.substring(0, file.length - 3);
-    const testMjs = (noExt + ".mjs").toLowerCase();
-    const testEs2015 = (noExt + ".es2015.js").toLowerCase();
+    const noExt = file.slice(0, file.length - 3);
+    const testMjs = `${noExt}.mjs`.toLowerCase();
+    const testEs2015 = `${noExt}.es2015.js`.toLowerCase();
     const matches = paths.filter((t) => {
       const lc = t.toLowerCase();
       return lc === testMjs || lc === testEs2015;
@@ -463,7 +463,7 @@ function main(params, write = mkdirpWrite) {
   function removeRootPath(p) {
     for (const r of rootDirs) {
       if (p.startsWith(r)) {
-        return p.substring(r.length);
+        return p.slice(r.length);
       }
     }
     return p;
