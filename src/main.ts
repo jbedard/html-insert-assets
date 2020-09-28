@@ -44,13 +44,11 @@ function computeAssets(assets: string[]) {
 }
 
 function findElementByName(d: Node, name: string): Node | undefined {
-  if (treeAdapter.isTextNode(d)) return undefined;
-
   if ("nodeName" in d && d.nodeName.toLowerCase() === name) {
     return d;
   }
 
-  for (const f of treeAdapter.getChildNodes(d)) {
+  for (const f of treeAdapter.getChildNodes(d) || []) {
     const result = findElementByName(f, name);
     if (result) return result;
   }
