@@ -17,21 +17,21 @@ const ICO_ASSET_GITHUB_HASH = "B1oibWKIpml3j2X37M3ZZ3CSU"; // original: "B+1oi+b
 const CSS_ASSET_RESET = "./test/data/assets/reset.css";
 const CSS_ASSET_RESET_HASH = "D3C2hyvo84Oc7dvX3WUThJ6oUl4"; // original: "D3C2hyvo84Oc7dvX3WUThJ6oUl4=";
 
-let output;
-function write(_, content) {
+let output = "";
+function write(_: any, content: string) {
   output = content;
 }
 
-afterEach(() => (output = undefined));
+afterEach(() => (output = ""));
 
-function mainTest(args) {
+function mainTest(args: string[]) {
   // Disable hashing for basic tests
   args.push("--stamp", "none");
 
   return main(args, write);
 }
 
-function scriptHtml(script) {
+function scriptHtml(script: string) {
   return `<html><head></head><body><script src="${script}"></script></body></html>`;
 }
 
@@ -868,7 +868,7 @@ describe("preloading", () => {
 });
 
 describe("stamping", () => {
-  function stampTest(args) {
+  function stampTest(args: string[]) {
     return main(args, write);
   }
 
@@ -1027,7 +1027,7 @@ describe("stamping", () => {
     expect(/\/alert\.js\?v=\d{13}"/.test(output)).toBeTrue();
     expect(/\/answer\.mjs\?v=\d{13}"/.test(output)).toBeTrue();
 
-    expect(output.match(/\/reset\.css\?v=(\d{13})"/)[0]).not.toBe(__NOW);
+    expect(output.match(/\/reset\.css\?v=(\d{13})"/)![0]).not.toBe(__NOW);
   });
 
   it("should support stamping with a substring of file lastmod", () => {

@@ -1,14 +1,11 @@
 {
-    "include": ["src/*.js", "test/*.js"],
+    "extends": "@tsconfig/node10/tsconfig.json",
+
+    "include": ["src/**/*.ts"],
     "compilerOptions": {
-        "allowJs": true,
-        "checkJs": true,
-        "alwaysStrict": true,
-        "noEmit": true,
-        "strict": true,
-        "noImplicitAny": false,
-        "module": "commonjs",
-        "moduleResolution": "Node",
-        "lib": ["ES2015"]
+        "outDir": "dist",
+        "baseUrl": "src",
+        "declaration": false,
+        "noImplicitAny": true,
     }
 }

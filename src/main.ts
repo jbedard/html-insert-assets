@@ -1,9 +1,10 @@
 // Originally forked from https://github.com/bazelbuild/rules_nodejs/tree/0.41.0/packages/inject-html
 "use strict";
 
+import { Node, TreeAdapter } from "parse5";
+
 const parse5 = require("parse5");
-/** @type parse5.TreeAdapter */
-const treeAdapter = require("parse5/lib/tree-adapters/default");
+const treeAdapter: TreeAdapter = require("parse5/lib/tree-adapters/default");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -16,16 +17,22 @@ const FILE_TYPE_RE = /\.([a-z]+)$/i;
 const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
 const NOW = String(Date.now());
 
-/**
- * @param {string} ext
- * @returns {string}
- */
-function fileExtToType(ext) {
+
+
+
+interface NodeUtils {
+  toUrl(url: string): string,
+  body: Node,
+  head: Node,
+}
+
+
+function fileExtToType(ext: string) {
   return ext === "mjs" ? "js" : ext;
 }
 
-function computeAssets(assets) {
-  return assets.reduce((map, a) => {
+function computeAssets(assets: string[]) {
+  return assets.reduce<{[type: string]: string[]}>((map, a) => {
     const r = a.match(EXTERNAL_FILE_TYPE_RE) || a.match(FILE_TYPE_RE);
     const [, ext] = r || ["", "(no ext)"];
     const type = fileExtToType(ext.toLowerCase());
@@ -36,12 +43,7 @@ function computeAssets(assets) {
   }, {});
 }
 
-/**
- * @param {parse5.Node} d
- * @param {string} name
- * @returns {parse5.DefaultTreeNode|undefined}
- */
-function findElementByName(d, name) {
+function findElementByName(d: Node, name: string): Node | undefined {
   if (treeAdapter.isTextNode(d)) return undefined;
 
   if ("nodeName" in d && d.nodeName.toLowerCase() === name) {
@@ -56,11 +58,7 @@ function findElementByName(d, name) {
   return undefined;
 }
 
-/**
- * @param {string} p
- * @returns {string}
- */
-function normalizePath(p) {
+function normalizePath(p: string) {
   p = path.normalize(p);
   // Convert paths to posix
   p = p.replace(/\\/g, "/");
@@ -70,11 +68,7 @@ function normalizePath(p) {
   return p;
 }
 
-/**
- * @param {string} d
- * @returns {string}
- */
-function normalizeDirPath(d) {
+function normalizeDirPath(d: string) {
   d = normalizePath(d);
   if (!d.endsWith("/")) {
     d = `${d}/`;
@@ -82,23 +76,14 @@ function normalizeDirPath(d) {
   return d;
 }
 
-/**
- * @param {string} p
- * @returns {string}
- */
-function removeExternal(p) {
+function removeExternal(p: string) {
   if (p.startsWith("./external/")) {
     p = normalizePath(p.slice("./external/".length));
   }
   return p;
 }
 
-/**
- * @param {any[]}  params
- * @param {number} i
- * @returns {[any[], number]}
- */
-function readVarArgs(params, i) {
+function readVarArgs(params: string[], i: number): [string[], number] {
   const args = [];
   while (i < params.length && !params[i].startsWith("--")) {
     args.push(params[i++]);
@@ -106,13 +91,7 @@ function readVarArgs(params, i) {
   return [args, i - 1];
 }
 
-/**
- * @param {any[]} params
- * @param {number} i
- * @param {any | undefined} defaultValue
- * @returns {[any, number]}
- */
-function readOptionalParam(params, i, defaultValue) {
+function readOptionalParam(params: string[], i: number, defaultValue: string): [string, number] {
   if (i < params.length && !params[i].startsWith("--")) {
     return [params[i], i];
   }
@@ -120,11 +99,7 @@ function readOptionalParam(params, i, defaultValue) {
   return [defaultValue, i - 1];
 }
 
-/**
- * @param {string} src
- * @param {boolean} [moduleName]
- */
-function createScriptElement(src, moduleName) {
+function createScriptElement(src: string, moduleName?: boolean) {
   const attrs = [];
   if (moduleName) {
     attrs.push({ name: "type", value: "module" });
@@ -147,7 +122,7 @@ const PRELOAD_TYPES = Object.freeze({
   png: "image",
   gif: "image",
 });
-function insertPreloads({ head, toUrl }, paths, preloadAs) {
+function insertPreloads({ head, toUrl }: NodeUtils, paths: string[], preloadAs: string) {
   for (const p of paths) {
     const link = treeAdapter.createElement("link", "", [
       { name: "rel", value: "preload" },
@@ -158,21 +133,17 @@ function insertPreloads({ head, toUrl }, paths, preloadAs) {
   }
 }
 
-/**
- * @param {string[]} cmdParams
- */
-function parseArgs(cmdParams) {
+function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
-  let assetsList = [];
-  let preloadAssetsList = [];
-  let rootDirs = [];
+  let assetsList: string[] = [];
+  let preloadAssetsList: string[] = [];
+  let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
   let stampType = "hash=8";
 
-  const params = cmdParams.reduce(
-    /** @param {string[]} a */ (a, p) => {
+  const params = cmdParams.reduce<string[]>((a, p) => {
       if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
         a.push(...p.split("=", 2));
       } else {
@@ -249,14 +220,14 @@ function parseArgs(cmdParams) {
   };
 }
 
-function insertScripts({ body, toUrl }, paths) {
+function insertScripts({ body, toUrl }: NodeUtils, paths: string[]) {
   // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
   // ESModule script we add a 'nomodule' attribute
-  function hasMatchingModule(file) {
+  function hasMatchingModule(file: string) {
     const noExt = file.slice(0, file.length - 3);
     const testMjs = `${noExt}.mjs`.toLowerCase();
     const testEs2015 = `${noExt}.es2015.js`.toLowerCase();
-    const matches = paths.filter((t) => {
+    const matches = paths.filter(t => {
       const lc = t.toLowerCase();
       return lc === testMjs || lc === testEs2015;
     });
@@ -287,7 +258,7 @@ function insertScripts({ body, toUrl }, paths) {
   }
 }
 
-function insertCss({ head, toUrl }, paths) {
+function insertCss({ head, toUrl }: NodeUtils, paths: string[]) {
   for (const css of paths) {
     const stylesheet = treeAdapter.createElement("link", "", [
       { name: "rel", value: "stylesheet" },
@@ -297,7 +268,7 @@ function insertCss({ head, toUrl }, paths) {
   }
 }
 
-function insertFavicons({ head, toUrl }, paths) {
+function insertFavicons({ head, toUrl }: NodeUtils, paths: string[]) {
   for (const ico of paths) {
     const icoLink = treeAdapter.createElement("link", "", [
       { name: "rel", value: "shortcut icon" },
@@ -308,41 +279,25 @@ function insertFavicons({ head, toUrl }, paths) {
   }
 }
 
-/**
- * @param {boolean} verbose
- * @returns {(msg: string, ...args: any[]) => void}
- */
-function createLogger(verbose) {
+function createLogger(verbose: boolean) {
   if (!verbose) {
     return () => {};
   }
 
-  return function logger(str, ...args) {
+  return function logger(str: string, ...args: any[]) {
     console.log(`${NPM_NAME}: ${str}`, ...args);
   };
 }
 
-/**
- * @param {string} str
- * @param  {...any[]} args
- */
-function warn(str, ...args) {
+function warn(str: string, ...args: any[]) {
   console.warn(`${NPM_NAME}: ${str}`, ...args);
 }
 
-/**
- * @param {string} str
- * @param  {...any[]} args
- */
-function newError(str, ...args) {
+function newError(str: string, ...args: any[]) {
   return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
 }
 
-/**
- * @param {string} file
- * @returns {string}
- */
-function fileLastModified(file) {
+function fileLastModified(file: string) {
   if (fs.existsSync(file)) {
     return String(fs.statSync(file).mtime.getTime());
   }
@@ -354,11 +309,7 @@ function fileLastModified(file) {
   return NOW;
 }
 
-/**
- * @param {string} file
- * @returns {string}
- */
-function hashFile(file) {
+function hashFile(file: string) {
   if (fs.existsSync(file)) {
     const data = fs.readFileSync(file);
     return crypto
@@ -375,11 +326,7 @@ function hashFile(file) {
   return NOW;
 }
 
-/**
- * @param {string} typeParam
- * @returns {(path: string) => string}
- */
-function createStamper(typeParam) {
+function createStamper(typeParam: string): (f: string) => string {
   const [type, value] = typeParam.split("=");
 
   switch (type) {
@@ -403,20 +350,12 @@ function createStamper(typeParam) {
   }
 }
 
-/**
- * @param {string} filePath
- * @param {string} value
- */
-function mkdirpWrite(filePath, value) {
+function mkdirpWrite(filePath: string, value: string) {
   mkdirp.sync(path.dirname(filePath));
   fs.writeFileSync(filePath, value);
 }
 
-/**
- * @param {string[]} params
- * @param {mkdirpWrite} write
- */
-function main(params, write = mkdirpWrite) {
+function main(params: string[], write = mkdirpWrite) {
   const {
     inputFile,
     outputFile,
@@ -456,11 +395,7 @@ function main(params, write = mkdirpWrite) {
     throw newError("No <head> tag found in HTML document");
   }
 
-  /**
-   * @param {string} p
-   * @returns {string}
-   */
-  function removeRootPath(p) {
+  function removeRootPath(p: string) {
     for (const r of rootDirs) {
       if (p.startsWith(r)) {
         return p.slice(r.length);
@@ -471,11 +406,8 @@ function main(params, write = mkdirpWrite) {
 
   const outputDir = normalizeDirPath(path.dirname(outputFile));
   const rootedOutputDir = removeRootPath(outputDir).replace(/^\//, "./");
-  /**
-   * @param {string} p
-   * @returns boolean
-   */
-  function relativeToHtml(p) {
+
+  function relativeToHtml(p: string) {
     // Ignore absolute
     if (path.isAbsolute(p)) {
       return p;
@@ -492,11 +424,8 @@ function main(params, write = mkdirpWrite) {
    * - standard path normalization
    *
    * Leaves external URLs as-is.
-   *
-   * @param {string} origPath the path to convert to a normalized URL
-   * @returns {string} the normalized URL
    */
-  function toUrl(origPath) {
+  function toUrl(origPath: string) {
     let execPath = origPath;
 
     if (EXTERNAL_RE.test(origPath)) {
@@ -520,13 +449,12 @@ function main(params, write = mkdirpWrite) {
     return execPath;
   }
 
-  const utils = { toUrl, body, head };
+  const utils: NodeUtils = { toUrl, body, head };
 
   // Insertion of various asset preload types
   for (const [type, prePaths] of Object.entries(preloadAssets)) {
-    const preloadAs = PRELOAD_TYPES[type];
-    if (preloadAs) {
-      insertPreloads(utils, prePaths, preloadAs);
+    if (PRELOAD_TYPES.hasOwnProperty(type)) {
+      insertPreloads(utils, prePaths, (PRELOAD_TYPES as any)[type]);
     } else if (strict) {
       throw newError(`Unknown preload type(${type}), paths(${prePaths})`);
     }
@@ -563,10 +491,10 @@ function main(params, write = mkdirpWrite) {
   return 0;
 }
 
-module.exports = {
+export {
   parseArgs,
   main,
 
   // For testing
-  __NOW: NOW,
+  NOW as __NOW
 };

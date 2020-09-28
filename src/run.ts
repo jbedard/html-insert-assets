@@ -1,5 +1,5 @@
 "use strict";
 
-const { main } = require("./main");
+import { main } from "./main";
 
 process.exitCode = main(process.argv.slice(2));

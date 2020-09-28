@@ -1,26 +1,28 @@
 {
+    "root": true,
     "env": {
         "node": true,
         "commonjs": true,
         "es6": true
     },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
     "extends": [
         "eslint:recommended",
-        "plugin:prettier/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+        "prettier",
+        "plugin:prettier/recommended",
+        "prettier/@typescript-eslint"
     ],
-    "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
-    },
     "parserOptions": {
         "ecmaVersion": 2018
     },
-    "rules": {
-        "require-jsdoc": 0
-    },
     "overrides": [
         {
-          "files": [ "test/*.js" ],
+          "files": [ "test/*.ts" ],
           "env": {
               "jasmine": true
           }
