@@ -4,6 +4,7 @@ const path = require("path");
 const { main, parseArgs, __NOW } = require("../src/main");
 
 const inFile = "./test/data/index-template.html";
+const inFileHTML5 = "./test/data/index-html5-template.html";
 
 const JS_ASSET_ALERT = "./test/data/assets/alert.js";
 const JS_ASSET_ALERT_HASH = "6yOVKodXSr6FwCnpf6HWhXZl2w"; // original: "6yOVKod/XSr6FwCnpf6HWhXZl2w=";
@@ -39,6 +40,11 @@ describe("base", () => {
   it("should noop when no assets", () => {
     expect(mainTest(["--out", "index.html", "--html", inFile])).toBe(0);
     expect(output).toBe("<html><head></head><body></body></html>");
+  });
+
+  it("should noop when no assets with html5 template", () => {
+    expect(mainTest(["--out", "index.html", "--html", inFileHTML5])).toBe(0);
+    expect(output).toBe("<!DOCTYPE html><html><head></head><body></body></html>");
   });
 
   it("should normalize asset paths", () => {
@@ -167,6 +173,30 @@ describe("base", () => {
 });
 
 describe("js assets", () => {
+  it("should inject js assets as <script> tags", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "a.js",
+    ]);
+    expect(output).toMatch(/<script.*\.\/a\.js/);
+  });
+
+  it("should inject js assets as <script> tags with html5 template", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFileHTML5,
+      "--assets",
+      "a.js",
+    ]);
+    expect(output).toMatch(/<script.*\.\/a\.js/);
+  });
+
   it("should ensure js asset paths start with a absolute or relative indicator", () => {
     mainTest([
       "--out",
