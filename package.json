@@ -16,7 +16,7 @@
     "build": "tsc",
     "clean": "rm -Rf dist/",
     "test": "ts-node node_modules/jasmine/bin/jasmine test/*.ts",
-    "lint": "eslint --fix"
+    "lint": "eslint --fix {src,test}/*.ts"
   },
   "husky": {
     "hooks": {

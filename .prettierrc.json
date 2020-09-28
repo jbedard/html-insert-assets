@@ -1,0 +1,6 @@
+{
+    "arrowParens": "avoid",
+    "htmlWhitespaceSensitivity": "strict",
+    "trailingComma": "es5"
+}
+  

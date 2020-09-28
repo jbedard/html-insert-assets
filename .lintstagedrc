@@ -1,4 +1,4 @@
 {
-  "src/*.js": ["eslint --fix"],
-  "test/*.js": ["eslint --fix --env=jasmine"]
+  "src/*.{ts,js}": ["eslint --fix"],
+  "test/*.{ts,js}": ["eslint --fix"]
 }

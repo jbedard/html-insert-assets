@@ -2,13 +2,13 @@
 "use strict";
 
 import { Node, TreeAdapter } from "parse5";
+import parse5 = require("parse5");
+const treeAdapter = require("parse5/lib/tree-adapters/default") as TreeAdapter;
 
-const parse5 = require("parse5");
-const treeAdapter: TreeAdapter = require("parse5/lib/tree-adapters/default");
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const mkdirp = require("mkdirp");
+import crypto = require("crypto");
+import fs = require("fs");
+import path = require("path");
+import mkdirp = require("mkdirp");
 
 const NPM_NAME = "html-insert-assets";
 
@@ -17,22 +17,18 @@ const FILE_TYPE_RE = /\.([a-z]+)$/i;
 const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
 const NOW = String(Date.now());
 
-
-
-
 interface NodeUtils {
-  toUrl(url: string): string,
-  body: Node,
-  head: Node,
+  toUrl(url: string): string;
+  body: Node;
+  head: Node;
 }
-
 
 function fileExtToType(ext: string) {
   return ext === "mjs" ? "js" : ext;
 }
 
 function computeAssets(assets: string[]) {
-  return assets.reduce<{[type: string]: string[]}>((map, a) => {
+  return assets.reduce<{ [type: string]: string[] }>((map, a) => {
     const r = a.match(EXTERNAL_FILE_TYPE_RE) || a.match(FILE_TYPE_RE);
     const [, ext] = r || ["", "(no ext)"];
     const type = fileExtToType(ext.toLowerCase());
@@ -89,7 +85,11 @@ function readVarArgs(params: string[], i: number): [string[], number] {
   return [args, i - 1];
 }
 
-function readOptionalParam(params: string[], i: number, defaultValue: string): [string, number] {
+function readOptionalParam(
+  params: string[],
+  i: number,
+  defaultValue: string
+): [string, number] {
   if (i < params.length && !params[i].startsWith("--")) {
     return [params[i], i];
   }
@@ -120,7 +120,11 @@ const PRELOAD_TYPES = Object.freeze({
   png: "image",
   gif: "image",
 });
-function insertPreloads({ head, toUrl }: NodeUtils, paths: string[], preloadAs: string) {
+function insertPreloads(
+  { head, toUrl }: NodeUtils,
+  paths: string[],
+  preloadAs: string
+) {
   for (const p of paths) {
     const link = treeAdapter.createElement("link", "", [
       { name: "rel", value: "preload" },
@@ -142,15 +146,13 @@ function parseArgs(cmdParams: string[]) {
   let stampType = "hash=8";
 
   const params = cmdParams.reduce<string[]>((a, p) => {
-      if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
-        a.push(...p.split("=", 2));
-      } else {
-        a.push(p);
-      }
-      return a;
-    },
-    []
-  );
+    if (p.startsWith("--") && p.match(/^--[a-z]+=/)) {
+      a.push(...p.split("=", 2));
+    } else {
+      a.push(p);
+    }
+    return a;
+  }, []);
 
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
@@ -279,19 +281,21 @@ function insertFavicons({ head, toUrl }: NodeUtils, paths: string[]) {
 
 function createLogger(verbose: boolean) {
   if (!verbose) {
-    return () => {};
+    return () => {
+      /* noop */
+    };
   }
 
-  return function logger(str: string, ...args: any[]) {
+  return function logger(str: string, ...args: unknown[]) {
     console.log(`${NPM_NAME}: ${str}`, ...args);
   };
 }
 
-function warn(str: string, ...args: any[]) {
+function warn(str: string, ...args: unknown[]) {
   console.warn(`${NPM_NAME}: ${str}`, ...args);
 }
 
-function newError(str: string, ...args: any[]) {
+function newError(str: string, ...args: unknown[]) {
   return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
 }
 
@@ -338,10 +342,10 @@ function createStamper(typeParam: string): (f: string) => string {
       return () => NOW.slice(-value);
 
     case "lastmod":
-      return (f) => fileLastModified(f).slice(-value);
+      return f => fileLastModified(f).slice(-value);
 
     case "hash":
-      return (f) => hashFile(f).slice(-value);
+      return f => hashFile(f).slice(-value);
 
     default:
       throw newError(`Invalid stamp type: ${typeParam}`);
@@ -380,7 +384,9 @@ function main(params: string[], write = mkdirpWrite) {
 
   const document = parse5.parse(
     fs.readFileSync(inputFile, { encoding: "utf-8" }),
-    { treeAdapter }
+    {
+      treeAdapter,
+    }
   );
 
   const body = findElementByName(document, "body");
@@ -451,9 +457,11 @@ function main(params: string[], write = mkdirpWrite) {
 
   // Insertion of various asset preload types
   for (const [type, prePaths] of Object.entries(preloadAssets)) {
-    if (PRELOAD_TYPES.hasOwnProperty(type)) {
+    if (type in PRELOAD_TYPES) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       insertPreloads(utils, prePaths, (PRELOAD_TYPES as any)[type]);
     } else if (strict) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw newError(`Unknown preload type(${type}), paths(${prePaths})`);
     }
   }
@@ -474,7 +482,7 @@ function main(params: string[], write = mkdirpWrite) {
         break;
 
       default:
-        // eslint-disable-next-line no-case-declarations
+        // eslint-disable-next-line no-case-declarations, @typescript-eslint/restrict-template-expressions
         const msg = `Unknown asset type(${type}), paths(${paths})`;
         if (strict) {
           throw newError(msg);
@@ -492,7 +500,6 @@ function main(params: string[], write = mkdirpWrite) {
 export {
   parseArgs,
   main,
-
   // For testing
-  NOW as __NOW
+  NOW as __NOW,
 };

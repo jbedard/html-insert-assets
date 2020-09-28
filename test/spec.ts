@@ -1,7 +1,7 @@
 "use strict";
 
-const path = require("path");
-const { main, parseArgs, __NOW } = require("../src/main");
+import path = require("path");
+import { main, parseArgs, __NOW } from "../src/main";
 
 const inFile = "./test/data/index-template.html";
 const inFileHTML5 = "./test/data/index-html5-template.html";
@@ -19,7 +19,7 @@ const CSS_ASSET_RESET = "./test/data/assets/reset.css";
 const CSS_ASSET_RESET_HASH = "D3C2hyvo84Oc7dvX3WUThJ6oUl4"; // original: "D3C2hyvo84Oc7dvX3WUThJ6oUl4=";
 
 let output = "";
-function write(_: any, content: string) {
+function write(_: string, content: string) {
   output = content;
 }
 
@@ -44,7 +44,9 @@ describe("base", () => {
 
   it("should noop when no assets with html5 template", () => {
     expect(mainTest(["--out", "index.html", "--html", inFileHTML5])).toBe(0);
-    expect(output).toBe("<!DOCTYPE html><html><head></head><body></body></html>");
+    expect(output).toBe(
+      "<!DOCTYPE html><html><head></head><body></body></html>"
+    );
   });
 
   it("should normalize asset paths", () => {
@@ -174,14 +176,7 @@ describe("base", () => {
 
 describe("js assets", () => {
   it("should inject js assets as <script> tags", () => {
-    mainTest([
-      "--out",
-      "index.html",
-      "--html",
-      inFile,
-      "--assets",
-      "a.js",
-    ]);
+    mainTest(["--out", "index.html", "--html", inFile, "--assets", "a.js"]);
     expect(output).toMatch(/<script.*\.\/a\.js/);
   });
 
@@ -1057,6 +1052,7 @@ describe("stamping", () => {
     expect(/\/alert\.js\?v=\d{13}"/.test(output)).toBeTrue();
     expect(/\/answer\.mjs\?v=\d{13}"/.test(output)).toBeTrue();
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     expect(output.match(/\/reset\.css\?v=(\d{13})"/)![0]).not.toBe(__NOW);
   });
 

@@ -18,14 +18,24 @@
         "prettier/@typescript-eslint"
     ],
     "parserOptions": {
-        "ecmaVersion": 2018
+        "ecmaVersion": 2018,
+        "project": "tsconfig.json"
     },
     "overrides": [
         {
           "files": [ "test/*.ts" ],
           "env": {
               "jasmine": true
+          },
+          "parserOptions": {
+            "project": "test/tsconfig.json"
           }
         }
-    ]
+    ],
+    "rules": {
+        // All module boundaries are internal or just for tests
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/prefer-regexp-exec": "off",
+        "@typescript-eslint/no-var-requires": "off"
+    }
 }
