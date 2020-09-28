@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "clean": "rm -Rf dist/",
     "test": "ts-node node_modules/jasmine/bin/jasmine test/*.ts",
     "lint": "eslint --fix"
   },
@@ -22,7 +23,7 @@
       "pre-commit": "lint-staged && tsc"
     }
   },
-  "prepublish": "tsc",
+  "prepublish": "rm -Rf dist/ && tsc",
   "dependencies": {
     "mkdirp": "^1.0.3",
     "parse5": "^6.0.0"
