@@ -5,5 +5,8 @@
     "compilerOptions": {
         "declaration": false,
         "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
     }
 }
