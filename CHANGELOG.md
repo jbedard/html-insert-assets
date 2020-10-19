@@ -1,3 +1,17 @@
+# [0.11.0](https://github.com/jbedard/html-insert-assets/compare/v0.11.0-beta.0...v0.11.0) (2020-10-19)
+
+
+### Bug Fixes
+
+* fix crash when used with html5 doctype ([32cb23d](https://github.com/jbedard/html-insert-assets/commit/32cb23dd8f6c3b5546fa45323efbddef2410cd1a)), closes [#15](https://github.com/jbedard/html-insert-assets/issues/15)
+
+
+### Features
+
+* **script:** add --script for specifying script specific details ([d452e1f](https://github.com/jbedard/html-insert-assets/commit/d452e1f7f915a1db11be9a9a6cc6d66d8c69adf7)), closes [#13](https://github.com/jbedard/html-insert-assets/issues/13) [#11](https://github.com/jbedard/html-insert-assets/issues/11)
+
+
+
 # [0.10.0](https://github.com/jbedard/html-insert-assets/compare/v0.9.0...v0.10.0) (2020-06-12)
 
 
