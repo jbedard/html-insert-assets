@@ -32,14 +32,21 @@ export const enum AssetType {
   UNKNOWN,
 }
 
+export type Attributes = { readonly [name: string]: string };
+
 export interface Asset {
   readonly type: AssetType;
   readonly uri: string;
+  readonly attributes: Attributes;
 }
 
 export interface JsAsset extends Asset {
   readonly type: AssetType.JS | AssetType.MJS;
   readonly module?: boolean;
+}
+
+function isJsAsset(asset: Asset): asset is JsAsset {
+  return asset.type === AssetType.JS || asset.type === AssetType.MJS;
 }
 
 function guessTypeFromFileExt(ext: string) {
@@ -70,6 +77,7 @@ function guessPathToAsset(uri: string): Asset {
   return {
     type,
     uri,
+    attributes: {},
   };
 }
 
@@ -131,6 +139,73 @@ function readOptionalParam(
   return [defaultValue, i - 1];
 }
 
+function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
+  const attributes: { [attr: string]: string } = {};
+
+  let allModules: boolean | undefined = undefined;
+
+  while (i < params.length && params[i].startsWith("--")) {
+    const param = params[i++];
+
+    switch (param) {
+      case "--async":
+        attributes["async"] = "";
+        break;
+
+      case "--module":
+      case "--nomodule":
+        if (allModules !== undefined) {
+          throw newError("Both --module and --nomodule specified");
+        }
+
+        allModules = param === "--module";
+        break;
+
+      case "--attr":
+        // eslint-disable-next-line no-case-declarations
+        const [key, value] = params[i++].split("=", 2);
+        attributes[key] = value || "";
+        break;
+
+      default:
+        throw newError(`Unknown --scripts arg: ${param}`);
+    }
+  }
+
+  const uris: string[] = [];
+
+  do {
+    uris.push(params[i]);
+  } while (i < params.length && !params[++i].startsWith("--"));
+
+  uris.forEach(uri => {
+    let type: AssetType;
+    let module = allModules;
+
+    // If specified via --[no]module then used that
+    if (module !== undefined) {
+      type = module ? AssetType.MJS : AssetType.JS;
+    }
+    // Otherwise determine it based on filename
+    else if (ES2015_RE.test(uri)) {
+      type = AssetType.MJS;
+      module = true;
+    } else {
+      type = AssetType.JS;
+      module = hasMatchingModule(uri, uris) ? false : undefined;
+    }
+
+    scriptAssets.push({
+      type,
+      uri,
+      module,
+      attributes,
+    });
+  });
+
+  return i - 1;
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
 const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
   [AssetType.JS]: "script",
@@ -152,6 +227,7 @@ function insertPreload({ head }: DOMUtils, uri: string, preloadAs: string) {
 function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
+  const scriptAssets: JsAsset[] = [];
   let assetPaths: string[] = [];
   let preloadAssetPaths: string[] = [];
   let rootDirs: string[] = [];
@@ -172,6 +248,10 @@ function parseArgs(cmdParams: string[]) {
     switch (params[i]) {
       case "--assets":
         [assetPaths, i] = readVarArgs(params, i + 1);
+        break;
+
+      case "--scripts":
+        i = readScriptArgs(scriptAssets, params, i + 1);
         break;
 
       case "--preload":
@@ -222,6 +302,7 @@ function parseArgs(cmdParams: string[]) {
   return {
     inputFile,
     outputFile,
+    scriptAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -241,17 +322,12 @@ function hasMatchingModule(uri: string, all: string[]) {
   });
 }
 
-function guessES2015Modules(asset: Asset, all: string[]) {
-  if (asset.type !== AssetType.JS && asset.type !== AssetType.MJS) {
+function guessES2015Modules(asset: Asset, all: string[]): Asset | JsAsset {
+  if (!isJsAsset(asset) || EXTERNAL_RE.test(asset.uri)) {
     return asset;
   }
 
-  // eslint-disable-next-line prefer-const
-  let { type, uri } = asset;
-
-  if (EXTERNAL_RE.test(uri)) {
-    return asset;
-  }
+  const { type, uri } = asset;
 
   // Differential loading: for filenames like
   //  foo.mjs
@@ -263,27 +339,30 @@ function guessES2015Modules(asset: Asset, all: string[]) {
     AssetType.MJS === type ||
     (AssetType.JS === type && ES2015_RE.test(uri))
   ) {
-    return { type, uri, module: true };
+    return { ...asset, module: true };
   }
 
   // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
   // ESModule script we add a 'nomodule' attribute
   if (type === AssetType.JS && hasMatchingModule(uri, all)) {
-    return { type, uri, module: false };
+    return { ...asset, module: false };
   }
 
   return asset;
 }
 
-function insertScript(
-  { body }: DOMUtils,
-  url: string,
-  module: boolean | undefined
-) {
+function attributesToParse5(attributes: Attributes): parse5.Attribute[] {
+  return Object.keys(attributes).map(key => ({
+    name: key,
+    value: attributes[key],
+  }));
+}
+
+function insertScript({ body }: DOMUtils, url: string, asset: JsAsset) {
   const attrs: parse5.Attribute[] = [];
-  if (module === true) {
+  if (asset.module === true) {
     attrs.push({ name: "type", value: "module" });
-  } else if (module === false) {
+  } else if (asset.module === false) {
     // Note: empty string value is equivalent to a bare attribute, according to
     // https://github.com/inikulin/parse5/issues/1
     attrs.push({ name: "nomodule", value: "" });
@@ -291,24 +370,32 @@ function insertScript(
 
   attrs.push({ name: "src", value: url });
 
+  attrs.push(...attributesToParse5(asset.attributes));
+
   const script = treeAdapter.createElement("script", "", attrs);
 
   treeAdapter.appendChild(body, script);
 }
 
-function insertCss({ head }: DOMUtils, url: string) {
+function insertCss({ head }: DOMUtils, url: string, attributes: Attributes) {
   const stylesheet = treeAdapter.createElement("link", "", [
     { name: "rel", value: "stylesheet" },
     { name: "href", value: url },
+    ...attributesToParse5(attributes),
   ]);
   treeAdapter.appendChild(head, stylesheet);
 }
 
-function insertFavicon({ head }: DOMUtils, url: string) {
+function insertFavicon(
+  { head }: DOMUtils,
+  url: string,
+  attributes: Attributes
+) {
   const icoLink = treeAdapter.createElement("link", "", [
     { name: "rel", value: "shortcut icon" },
     { name: "type", value: "image/ico" },
     { name: "href", value: url },
+    ...attributesToParse5(attributes),
   ]);
   treeAdapter.appendChild(head, icoLink);
 }
@@ -395,6 +482,7 @@ function main(params: string[], write = mkdirpWrite) {
   const {
     inputFile,
     outputFile,
+    scriptAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -411,10 +499,13 @@ function main(params: string[], write = mkdirpWrite) {
   log("roots: %s", rootDirs);
 
   // Convert generic paths to assets
-  const assets = assetPaths.map(path =>
+  const guessedAssets = assetPaths.map(path =>
     guessES2015Modules(guessPathToAsset(path), assetPaths)
   );
   const preloadAssets = preloadAssetPaths.map(path => guessPathToAsset(path));
+
+  // Merge the various asset types
+  const assets = [...scriptAssets, ...guessedAssets];
 
   assets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
   preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
@@ -503,21 +594,21 @@ function main(params: string[], write = mkdirpWrite) {
 
   // Insertion of various asset types
   for (const asset of assets) {
-    const { type, uri } = asset;
+    const { type, uri, attributes } = asset;
     const url = toUrl(uri);
 
     switch (type) {
       case AssetType.JS:
       case AssetType.MJS:
-        insertScript(utils, url, (asset as JsAsset).module);
+        insertScript(utils, url, asset as JsAsset);
         break;
 
       case AssetType.CSS:
-        insertCss(utils, url);
+        insertCss(utils, url, attributes);
         break;
 
       case AssetType.FAVICON:
-        insertFavicon(utils, url);
+        insertFavicon(utils, url, attributes);
         break;
 
       default:

@@ -174,531 +174,1107 @@ describe("base", () => {
   });
 });
 
-describe("js assets", () => {
-  it("should inject js assets as <script> tags", () => {
-    mainTest(["--out", "index.html", "--html", inFile, "--assets", "a.js"]);
-    expect(output).toMatch(/<script.*\.\/a\.js/);
+describe("--assets", () => {
+  describe("js assets", () => {
+    it("should inject js assets as <script> tags", () => {
+      mainTest(["--out", "index.html", "--html", inFile, "--assets", "a.js"]);
+      expect(output).toMatch(/<script.*\.\/a\.js/);
+    });
+
+    it("should inject js assets as <script> tags with html5 template", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFileHTML5,
+        "--assets",
+        "a.js",
+      ]);
+      expect(output).toMatch(/<script.*\.\/a\.js/);
+    });
+
+    it("should ensure js asset paths start with a absolute or relative indicator", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "./a.js",
+        "/b.js",
+        "c.js",
+      ]);
+      expect(output).toBe(
+        '<html><head></head><body><script src="./a.js"></script><script src="/b.js"></script><script src="./c.js"></script></body></html>'
+      );
+    });
+
+    it("should inject relative .js as script with path relative to output", () => {
+      expect(
+        mainTest([
+          "--out",
+          "./index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "./path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject .js as script tag when --assets= is used", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets=path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js (no-prefix) as script with path relative to output (no-prefix)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag relative to output subdir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject absolute .js as script with absolute path", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "/path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("/path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with absolute path when --roots .", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with absolute path when output subdir and --roots .", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with path relative with absolute --out also as a root", () => {
+      expect(
+        mainTest([
+          "--out",
+          "/root/dir/index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "./path/to/my.js",
+          "--roots",
+          "/root/dir",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with path relative subdir with absolute --out also as a root", () => {
+      expect(
+        mainTest([
+          "--out",
+          "/root/dir/sub/index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "./path/to/my.js",
+          "--roots",
+          "/root/dir",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to root dir (same dir)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          "./path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir (no prefix)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          "path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir (no trailing slash)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "--roots",
+          "./path",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject absolute .js as script tag with absolute path to absolute root dir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "/path/to/my.js",
+          "--roots",
+          "/path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should strip the longest matching root prefix", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "path",
+          "path/to",
+          "--assets",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./my.js"));
+    });
+
+    it("should strip the external workspaces prefix", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "npm/node_modules/zone.js/dist",
+          "--assets",
+          "external/npm/node_modules/zone.js/dist/zone.min.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./zone.min.js"));
+    });
+
+    it("should insert non-local URLs as-is", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "https://ga.com/foo.js",
+          "http://foo.com/bar.js",
+          "file://local/file.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>'
+      );
+    });
+
+    it("should maintain <script> order across local vs non-local URLs", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/e1.js",
+          "https://ga.com/foo.js",
+          "path/to/e2.js",
+          "http://foo.com/bar.js",
+          "path/to/e3.js",
+          "file://local/file.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script src="./path/to/e1.js"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js"></script><script src="file://local/file.js"></script></body></html>'
+      );
+    });
+
+    it("should strip the external workspaces prefix in Windows", () => {
+      if (path.win32.normalize !== path.normalize) {
+        spyOn(path, "normalize").and.callFake(path.win32.normalize);
+      }
+
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "npm/node_modules/zone.js/dist",
+          "--assets",
+          "external/npm/node_modules/zone.js/dist/zone.min.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./zone.min.js"));
+    });
   });
 
-  it("should inject js assets as <script> tags with html5 template", () => {
+  describe("css assets", () => {
+    it("should ensure css asset paths start with a absolute or relative indicator", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "./a.css",
+        "/b.css",
+        "c.css",
+      ]);
+      expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="/b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
+      );
+    });
+
+    it("should inject .css files as stylesheet link tags", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.css",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
+      );
+    });
+
+    it("should strip the longest matching prefix for .css files", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "path",
+          "path/to",
+          "--assets",
+          "path/to/my.css",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="./my.css"></head><body></body></html>'
+      );
+    });
+
+    it("should inject .css files when --assets= is used", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets=path/to/my.css",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
+      );
+    });
+  });
+
+  describe("ico assets", () => {
+    it("should ensure ico asset paths start with a absolute or relative indicator", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--assets",
+        "./a.ico",
+        "/b.ico",
+        "c.ico",
+      ]);
+      expect(output).toBe(
+        '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="/b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      );
+    });
+
+    it("should inject .ico files as shortcut/icon link tags", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.ico",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
+      );
+    });
+
+    it("should strip the longest matching prefix for .ico files", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "path",
+          "path/to",
+          "--assets",
+          "path/to/my.ico",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico"></head><body></body></html>'
+      );
+    });
+  });
+
+  describe("js modules", () => {
+    it('should assume "module js" .mjs extension is type="module"', () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.mjs",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script type="module" src="./path/to/my.mjs"></script></body></html>'
+      );
+    });
+
+    it('should assume the ".es2015.js" extension is type="module"', () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.es2015.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
+      );
+    });
+
+    it("should create a pair of script tags for differential loading (.js, .es2015.js)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "path/to/my.es2015.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
+      );
+    });
+
+    it("should create a pair of script tags for differential loading (.js, .mjs)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--assets",
+          "path/to/my.js",
+          "path/to/my.mjs",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
+      );
+    });
+  });
+});
+
+describe("--scripts", () => {
+  // default behavior, essentially the same as passing .js/mjs to --assets
+  describe("basic assets", () => {
+    it("should inject js scripts as <script> tags", () => {
+      mainTest(["--out", "index.html", "--html", inFile, "--scripts", "a.js"]);
+      expect(output).toMatch(/<script.*\.\/a\.js/);
+    });
+
+    it("should inject js scripts as <script> tags with html5 template", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFileHTML5,
+        "--scripts",
+        "a.js",
+      ]);
+      expect(output).toMatch(/<script.*\.\/a\.js/);
+    });
+
+    it("should ensure js asset paths start with a absolute or relative indicator", () => {
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--scripts",
+        "./a.js",
+        "/b.js",
+        "c.js",
+      ]);
+      expect(output).toBe(
+        '<html><head></head><body><script src="./a.js"></script><script src="/b.js"></script><script src="./c.js"></script></body></html>'
+      );
+    });
+
+    it("should inject relative .js as script with path relative to output", () => {
+      expect(
+        mainTest([
+          "--out",
+          "./index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "./path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject .js as script tag when --scripts= is used", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts=path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js (no-prefix) as script with path relative to output (no-prefix)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag relative to output subdir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject absolute .js as script with absolute path", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "/path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("/path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with absolute path when --roots .", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with absolute path when output subdir and --roots .", () => {
+      expect(
+        mainTest([
+          "--out",
+          "sub/index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with path relative with absolute --out also as a root", () => {
+      expect(
+        mainTest([
+          "--out",
+          "/root/dir/index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "./path/to/my.js",
+          "--roots",
+          "/root/dir",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with path relative subdir with absolute --out also as a root", () => {
+      expect(
+        mainTest([
+          "--out",
+          "/root/dir/sub/index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "./path/to/my.js",
+          "--roots",
+          "/root/dir",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to root dir (same dir)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          ".",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./path/to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          "./path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir (no prefix)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          "path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject relative .js as script tag with absolute path to relative root dir (no trailing slash)", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/my.js",
+          "--roots",
+          "./path",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should inject absolute .js as script tag with absolute path to absolute root dir", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "/path/to/my.js",
+          "--roots",
+          "/path/",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./to/my.js"));
+    });
+
+    it("should strip the longest matching root prefix", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "path",
+          "path/to",
+          "--scripts",
+          "path/to/my.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./my.js"));
+    });
+
+    it("should strip the external workspaces prefix", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "npm/node_modules/zone.js/dist",
+          "--scripts",
+          "external/npm/node_modules/zone.js/dist/zone.min.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./zone.min.js"));
+    });
+
+    it("should insert non-local URLs as-is", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "https://ga.com/foo.js",
+          "http://foo.com/bar.js",
+          "file://local/file.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>'
+      );
+    });
+
+    it("should maintain <script> order across local vs non-local URLs", () => {
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "path/to/e1.js",
+          "https://ga.com/foo.js",
+          "path/to/e2.js",
+          "http://foo.com/bar.js",
+          "path/to/e3.js",
+          "file://local/file.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(
+        '<html><head></head><body><script src="./path/to/e1.js"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js"></script><script src="file://local/file.js"></script></body></html>'
+      );
+    });
+
+    it("should strip the external workspaces prefix in Windows", () => {
+      if (path.win32.normalize !== path.normalize) {
+        spyOn(path, "normalize").and.callFake(path.win32.normalize);
+      }
+
+      expect(
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--roots",
+          "npm/node_modules/zone.js/dist",
+          "--scripts",
+          "external/npm/node_modules/zone.js/dist/zone.min.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./zone.min.js"));
+    });
+  });
+
+  describe("modules", () => {
+    it("should throw if both --module and --nomodule specified", () => {
+      expect(() =>
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "--module",
+          "--nomodule",
+          "a.js",
+        ])
+      ).toThrow();
+    });
+
+    describe("auto", () => {
+      it('should assume "module js" .mjs extension is type="module"', () => {
+        expect(
+          mainTest([
+            "--out",
+            "index.html",
+            "--html",
+            inFile,
+            "--scripts",
+            "path/to/my.mjs",
+          ])
+        ).toBe(0);
+        expect(output).toBe(
+          '<html><head></head><body><script type="module" src="./path/to/my.mjs"></script></body></html>'
+        );
+      });
+
+      it('should assume the ".es2015.js" extension is type="module"', () => {
+        expect(
+          mainTest([
+            "--out",
+            "index.html",
+            "--html",
+            inFile,
+            "--scripts",
+            "path/to/my.es2015.js",
+          ])
+        ).toBe(0);
+        expect(output).toBe(
+          '<html><head></head><body><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
+        );
+      });
+
+      it("should create a pair of script tags for differential loading (.js, .es2015.js)", () => {
+        expect(
+          mainTest([
+            "--out",
+            "index.html",
+            "--html",
+            inFile,
+            "--scripts",
+            "path/to/my.js",
+            "path/to/my.es2015.js",
+          ])
+        ).toBe(0);
+        expect(output).toBe(
+          '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
+        );
+      });
+
+      it("should create a pair of script tags for differential loading (.js, .mjs)", () => {
+        expect(
+          mainTest([
+            "--out",
+            "index.html",
+            "--html",
+            inFile,
+            "--scripts",
+            "path/to/my.js",
+            "path/to/my.mjs",
+          ])
+        ).toBe(0);
+        expect(output).toBe(
+          '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
+        );
+      });
+    });
+
+    describe("--[no]module", () => {
+      it("should add type='module' when --module specified", () => {
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "--module",
+          "a.js",
+        ]);
+        expect(output).toBe(
+          '<html><head></head><body><script type="module" src="./a.js"></script></body></html>'
+        );
+      });
+
+      it("should add nomodule attribute when --nomodule specified", () => {
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "--nomodule",
+          "a.js",
+        ]);
+        expect(output).toBe(
+          '<html><head></head><body><script nomodule="" src="./a.js"></script></body></html>'
+        );
+      });
+
+      it("should add nomodule attribute when --nomodule specified even with .mjs", () => {
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "--nomodule",
+          "a.mjs",
+        ]);
+        expect(output).toBe(
+          '<html><head></head><body><script nomodule="" src="./a.mjs"></script></body></html>'
+        );
+      });
+
+      it("should add nomodule attribute when --nomodule specified even with .es2015.js", () => {
+        mainTest([
+          "--out",
+          "index.html",
+          "--html",
+          inFile,
+          "--scripts",
+          "--nomodule",
+          "a.es2015.js",
+        ]);
+        expect(output).toBe(
+          '<html><head></head><body><script nomodule="" src="./a.es2015.js"></script></body></html>'
+        );
+      });
+    });
+  });
+
+  it("should add async attribute when --async specified", () => {
     mainTest([
       "--out",
       "index.html",
       "--html",
-      inFileHTML5,
-      "--assets",
+      inFile,
+      "--scripts",
+      "--async",
       "a.js",
     ]);
-    expect(output).toMatch(/<script.*\.\/a\.js/);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js" async=""></script></body></html>'
+    );
   });
 
-  it("should ensure js asset paths start with a absolute or relative indicator", () => {
+  it("should allow adding arbitrary attributes using --attr", () => {
     mainTest([
       "--out",
       "index.html",
       "--html",
       inFile,
-      "--assets",
-      "./a.js",
-      "/b.js",
-      "c.js",
+      "--scripts",
+      "--attr",
+      "foo=bar",
+      "a.js",
     ]);
     expect(output).toBe(
-      '<html><head></head><body><script src="./a.js"></script><script src="/b.js"></script><script src="./c.js"></script></body></html>'
+      '<html><head></head><body><script src="./a.js" foo="bar"></script></body></html>'
     );
   });
 
-  it("should inject relative .js as script with path relative to output", () => {
-    expect(
-      mainTest([
-        "--out",
-        "./index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "./path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject .js as script tag when --assets= is used", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets=path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject relative .js (no-prefix) as script with path relative to output (no-prefix)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject relative .js as script tag relative to output subdir", () => {
-    expect(
-      mainTest([
-        "--out",
-        "sub/index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("../path/to/my.js"));
-  });
-
-  it("should inject absolute .js as script with absolute path", () => {
-    expect(
-      mainTest([
-        "--out",
-        "sub/index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "/path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("/path/to/my.js"));
-  });
-
-  it("should inject relative .js as script with absolute path when --roots .", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        ".",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject relative .js as script with absolute path when output subdir and --roots .", () => {
-    expect(
-      mainTest([
-        "--out",
-        "sub/index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        ".",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("../path/to/my.js"));
-  });
-
-  it("should inject relative .js as script with path relative with absolute --out also as a root", () => {
-    expect(
-      mainTest([
-        "--out",
-        "/root/dir/index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "./path/to/my.js",
-        "--roots",
-        "/root/dir",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject relative .js as script with path relative subdir with absolute --out also as a root", () => {
-    expect(
-      mainTest([
-        "--out",
-        "/root/dir/sub/index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "./path/to/my.js",
-        "--roots",
-        "/root/dir",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("../path/to/my.js"));
-  });
-
-  it("should inject relative .js as script tag with absolute path to root dir (same dir)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        ".",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./path/to/my.js"));
-  });
-
-  it("should inject relative .js as script tag with absolute path to relative root dir", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        "./path/",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./to/my.js"));
-  });
-
-  it("should inject relative .js as script tag with absolute path to relative root dir (no prefix)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        "path/",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./to/my.js"));
-  });
-
-  it("should inject relative .js as script tag with absolute path to relative root dir (no trailing slash)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "--roots",
-        "./path",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./to/my.js"));
-  });
-
-  it("should inject absolute .js as script tag with absolute path to absolute root dir", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "/path/to/my.js",
-        "--roots",
-        "/path/",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./to/my.js"));
-  });
-
-  it("should strip the longest matching root prefix", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--roots",
-        "path",
-        "path/to",
-        "--assets",
-        "path/to/my.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./my.js"));
-  });
-
-  it("should strip the external workspaces prefix", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--roots",
-        "npm/node_modules/zone.js/dist",
-        "--assets",
-        "external/npm/node_modules/zone.js/dist/zone.min.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./zone.min.js"));
-  });
-
-  it("should insert non-local URLs as-is", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "https://ga.com/foo.js",
-        "http://foo.com/bar.js",
-        "file://local/file.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script src="https://ga.com/foo.js"></script><script src="http://foo.com/bar.js"></script><script src="file://local/file.js"></script></body></html>'
-    );
-  });
-
-  it("should maintain <script> order across local vs non-local URLs", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/e1.js",
-        "https://ga.com/foo.js",
-        "path/to/e2.js",
-        "http://foo.com/bar.js",
-        "path/to/e3.js",
-        "file://local/file.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script src="./path/to/e1.js"></script><script src="https://ga.com/foo.js"></script><script src="./path/to/e2.js"></script><script src="http://foo.com/bar.js"></script><script src="./path/to/e3.js"></script><script src="file://local/file.js"></script></body></html>'
-    );
-  });
-
-  it("should strip the external workspaces prefix in Windows", () => {
-    if (path.win32.normalize !== path.normalize) {
-      spyOn(path, "normalize").and.callFake(path.win32.normalize);
-    }
-
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--roots",
-        "npm/node_modules/zone.js/dist",
-        "--assets",
-        "external/npm/node_modules/zone.js/dist/zone.min.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(scriptHtml("./zone.min.js"));
-  });
-});
-
-describe("css assets", () => {
-  it("should ensure css asset paths start with a absolute or relative indicator", () => {
+  it("should allow adding attributes such as crossorigin", () => {
     mainTest([
       "--out",
       "index.html",
       "--html",
       inFile,
-      "--assets",
-      "./a.css",
-      "/b.css",
-      "c.css",
+      "--scripts",
+      "--attr",
+      "crossorigin=use-credentials",
+      "a.js",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="/b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
+      '<html><head></head><body><script src="./a.js" crossorigin="use-credentials"></script></body></html>'
     );
   });
 
-  it("should inject .css files as stylesheet link tags", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.css",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
-    );
-  });
-
-  it("should strip the longest matching prefix for .css files", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--roots",
-        "path",
-        "path/to",
-        "--assets",
-        "path/to/my.css",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./my.css"></head><body></body></html>'
-    );
-  });
-
-  it("should inject .css files when --assets= is used", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets=path/to/my.css",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
-    );
-  });
-});
-
-describe("ico assets", () => {
-  it("should ensure ico asset paths start with a absolute or relative indicator", () => {
+  it("should allow adding multiple attributes using --attr", () => {
     mainTest([
       "--out",
       "index.html",
       "--html",
       inFile,
-      "--assets",
-      "./a.ico",
-      "/b.ico",
-      "c.ico",
+      "--scripts",
+      "--attr",
+      "foo=bar",
+      "--attr",
+      "asd=fgh",
+      "a.js",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="/b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head></head><body><script src="./a.js" foo="bar" asd="fgh"></script></body></html>'
     );
   });
 
-  it("should inject .ico files as shortcut/icon link tags", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.ico",
-      ])
-    ).toBe(0);
+  it("should support multiple sets of --scripts args for different configurations", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--scripts",
+      "--attr",
+      "foo=1",
+      "a.js",
+      "--scripts",
+      "--async",
+      "b.js",
+    ]);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
-    );
-  });
-
-  it("should strip the longest matching prefix for .ico files", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--roots",
-        "path",
-        "path/to",
-        "--assets",
-        "path/to/my.ico",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico"></head><body></body></html>'
-    );
-  });
-});
-
-describe("js modules", () => {
-  it('should assume "module js" .mjs extension is type="module"', () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.mjs",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script type="module" src="./path/to/my.mjs"></script></body></html>'
-    );
-  });
-
-  it('should assume the ".es2015.js" extension is type="module"', () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.es2015.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
-    );
-  });
-
-  it("should create a pair of script tags for differential loading (.js, .es2015.js)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "path/to/my.es2015.js",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.es2015.js"></script></body></html>'
-    );
-  });
-
-  it("should create a pair of script tags for differential loading (.js, .mjs)", () => {
-    expect(
-      mainTest([
-        "--out",
-        "index.html",
-        "--html",
-        inFile,
-        "--assets",
-        "path/to/my.js",
-        "path/to/my.mjs",
-      ])
-    ).toBe(0);
-    expect(output).toBe(
-      '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
+      '<html><head></head><body><script src="./a.js" foo="1"></script><script src="./b.js" async=""></script></body></html>'
     );
   });
 });
