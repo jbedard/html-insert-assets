@@ -1258,9 +1258,9 @@ describe("parseArgs", () => {
   });
 
   it("should accept no assets arg", () => {
-    const { assets } = parseArgs([...REQUIRE_PARAMS]);
+    const { assetPaths } = parseArgs([...REQUIRE_PARAMS]);
 
-    expect(assets).toEqual({});
+    expect(assetPaths).toEqual([]);
   });
 
   it("should accept empty roots", () => {
@@ -1312,8 +1312,8 @@ describe("parseArgs", () => {
     const {
       outputFile,
       inputFile,
-      assets,
-      preloadAssets,
+      assetPaths,
+      preloadAssetPaths,
       rootDirs,
     } = parseArgs([
       "--out",
@@ -1333,8 +1333,8 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets).toEqual({ js: ["./a.js", "./b.js"] });
-    expect(preloadAssets).toEqual({ js: ["./e.js"], css: ["./f.css"] });
+    expect(assetPaths).toEqual(["./a.js", "./b.js"]);
+    expect(preloadAssetPaths).toEqual(["./e.js", "./f.css"]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -1342,8 +1342,8 @@ describe("parseArgs", () => {
     const {
       outputFile,
       inputFile,
-      assets,
-      preloadAssets,
+      assetPaths,
+      preloadAssetPaths,
       rootDirs,
     } = parseArgs([
       "--out=./out",
@@ -1358,8 +1358,8 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets).toEqual({ js: ["./a.js", "./b.js"] });
-    expect(preloadAssets).toEqual({ js: ["./e.js"], css: ["./f.css"] });
+    expect(assetPaths).toEqual(["./a.js", "./b.js"]);
+    expect(preloadAssetPaths).toEqual(["./e.js", "./f.css"]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -1368,7 +1368,7 @@ describe("parseArgs", () => {
   });
 
   it("should accept multiple assets", () => {
-    const { assets } = parseArgs([
+    const { assetPaths } = parseArgs([
       ...REQUIRE_PARAMS,
       "--assets",
       "./a.js",
@@ -1376,11 +1376,6 @@ describe("parseArgs", () => {
       "./b.css",
       "./c.ico",
     ]);
-
-    expect(assets).toEqual({
-      js: ["./a.js", "./b.js"],
-      css: ["./b.css"],
-      ico: ["./c.ico"],
-    });
+    expect(assetPaths).toEqual(["./a.js", "./b.js", "./b.css", "./c.ico"]);
   });
 });

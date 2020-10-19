@@ -15,28 +15,62 @@ const NPM_NAME = "html-insert-assets";
 const EXTERNAL_RE = /^[a-z]+:\/\//;
 const FILE_TYPE_RE = /\.([a-z]+)$/i;
 const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
+const ES2015_RE = /\.(es2015\.|m)js$/i;
 const NOW = String(Date.now());
 
-interface NodeUtils {
-  toUrl(url: string): string;
+interface DOMUtils {
   body: Node;
   head: Node;
 }
 
-function fileExtToType(ext: string) {
-  return ext === "mjs" ? "js" : ext;
+export const enum AssetType {
+  JS,
+  MJS,
+  CSS,
+  FAVICON,
+  IMAGE,
+  UNKNOWN,
 }
 
-function computeAssets(assets: string[]) {
-  return assets.reduce<{ [type: string]: string[] }>((map, a) => {
-    const r = a.match(EXTERNAL_FILE_TYPE_RE) || a.match(FILE_TYPE_RE);
-    const [, ext] = r || ["", "(no ext)"];
-    const type = fileExtToType(ext.toLowerCase());
+export interface Asset {
+  readonly type: AssetType;
+  readonly uri: string;
+}
 
-    (map[type] || (map[type] = [])).push(a);
+export interface JsAsset extends Asset {
+  readonly type: AssetType.JS | AssetType.MJS;
+  readonly module?: boolean;
+}
 
-    return map;
-  }, {});
+function guessTypeFromFileExt(ext: string) {
+  switch (ext) {
+    case "js":
+      return AssetType.JS;
+    case "mjs":
+      return AssetType.MJS;
+    case "css":
+      return AssetType.CSS;
+    case "ico":
+      return AssetType.FAVICON;
+    case "png":
+    case "jpg":
+    case "gif":
+      return AssetType.IMAGE;
+    default:
+      return AssetType.UNKNOWN;
+  }
+}
+
+function guessPathToAsset(uri: string): Asset {
+  const r = uri.match(EXTERNAL_FILE_TYPE_RE) || uri.match(FILE_TYPE_RE);
+  const [, ext] = r || ["", "(no ext)"];
+
+  const type = guessTypeFromFileExt(ext.toLowerCase());
+
+  return {
+    type,
+    uri,
+  };
 }
 
 function findElementByName(d: Node, name: string): Node | undefined {
@@ -97,49 +131,29 @@ function readOptionalParam(
   return [defaultValue, i - 1];
 }
 
-function createScriptElement(src: string, moduleName?: boolean) {
-  const attrs = [];
-  if (moduleName) {
-    attrs.push({ name: "type", value: "module" });
-  } else if (moduleName === false) {
-    attrs.push({ name: "nomodule", value: "" });
-  }
-
-  attrs.push({ name: "src", value: src });
-
-  return treeAdapter.createElement("script", "", attrs);
-}
-
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
-const PRELOAD_TYPES = Object.freeze({
-  js: "script",
-  mjs: "script",
-  css: "style",
-  ico: "image",
-  jpg: "image",
-  png: "image",
-  gif: "image",
+const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
+  [AssetType.JS]: "script",
+  [AssetType.MJS]: "script",
+  [AssetType.CSS]: "style",
+  [AssetType.FAVICON]: "image",
+  [AssetType.IMAGE]: "image",
 });
-function insertPreloads(
-  { head, toUrl }: NodeUtils,
-  paths: string[],
-  preloadAs: string
-) {
-  for (const p of paths) {
-    const link = treeAdapter.createElement("link", "", [
-      { name: "rel", value: "preload" },
-      { name: "href", value: toUrl(p) },
-      { name: "as", value: preloadAs },
-    ]);
-    treeAdapter.appendChild(head, link);
-  }
+
+function insertPreload({ head }: DOMUtils, uri: string, preloadAs: string) {
+  const link = treeAdapter.createElement("link", "", [
+    { name: "rel", value: "preload" },
+    { name: "href", value: uri },
+    { name: "as", value: preloadAs },
+  ]);
+  treeAdapter.appendChild(head, link);
 }
 
 function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
-  let assetsList: string[] = [];
-  let preloadAssetsList: string[] = [];
+  let assetPaths: string[] = [];
+  let preloadAssetPaths: string[] = [];
   let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
@@ -157,11 +171,11 @@ function parseArgs(cmdParams: string[]) {
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
       case "--assets":
-        [assetsList, i] = readVarArgs(params, i + 1);
+        [assetPaths, i] = readVarArgs(params, i + 1);
         break;
 
       case "--preload":
-        [preloadAssetsList, i] = readVarArgs(params, i + 1);
+        [preloadAssetPaths, i] = readVarArgs(params, i + 1);
         break;
 
       case "--strict":
@@ -197,9 +211,6 @@ function parseArgs(cmdParams: string[]) {
     throw newError("required: --html, --out");
   }
 
-  const assets = computeAssets(assetsList);
-  const preloadAssets = computeAssets(preloadAssetsList);
-
   // Normalize fs paths, assets done separately later
   rootDirs = rootDirs.map(normalizeDirPath);
   inputFile = inputFile && normalizePath(inputFile);
@@ -211,8 +222,8 @@ function parseArgs(cmdParams: string[]) {
   return {
     inputFile,
     outputFile,
-    assets,
-    preloadAssets,
+    assetPaths,
+    preloadAssetPaths,
     rootDirs,
     stampType,
     strict,
@@ -220,63 +231,86 @@ function parseArgs(cmdParams: string[]) {
   };
 }
 
-function insertScripts({ body, toUrl }: NodeUtils, paths: string[]) {
+function hasMatchingModule(uri: string, all: string[]) {
+  const noExt = uri.slice(0, uri.lastIndexOf("."));
+  const testMjs = `${noExt}.mjs`.toLowerCase();
+  const testEs2015 = `${noExt}.es2015.js`.toLowerCase();
+  return all.some(t => {
+    const lc = t.toLowerCase();
+    return lc === testMjs || lc === testEs2015;
+  });
+}
+
+function guessES2015Modules(asset: Asset, all: string[]) {
+  if (asset.type !== AssetType.JS && asset.type !== AssetType.MJS) {
+    return asset;
+  }
+
+  // eslint-disable-next-line prefer-const
+  let { type, uri } = asset;
+
+  if (EXTERNAL_RE.test(uri)) {
+    return asset;
+  }
+
+  // Differential loading: for filenames like
+  //  foo.mjs
+  //  bar.es2015.js
+  //
+  // Use a <script type="module"> tag so these are only run in browsers that have
+  // ES2015 module loading.
+  if (
+    AssetType.MJS === type ||
+    (AssetType.JS === type && ES2015_RE.test(uri))
+  ) {
+    return { type, uri, module: true };
+  }
+
   // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
   // ESModule script we add a 'nomodule' attribute
-  function hasMatchingModule(file: string) {
-    const noExt = file.slice(0, file.length - 3);
-    const testMjs = `${noExt}.mjs`.toLowerCase();
-    const testEs2015 = `${noExt}.es2015.js`.toLowerCase();
-    const matches = paths.filter(t => {
-      const lc = t.toLowerCase();
-      return lc === testMjs || lc === testEs2015;
-    });
-    return matches.length > 0;
+  if (type === AssetType.JS && hasMatchingModule(uri, all)) {
+    return { type, uri, module: false };
   }
 
-  for (const s of paths) {
-    if (EXTERNAL_RE.test(s)) {
-      treeAdapter.appendChild(body, createScriptElement(toUrl(s), undefined));
-    } else if (/\.(es2015\.|m)js$/i.test(s)) {
-      // Differential loading: for filenames like
-      //  foo.mjs
-      //  bar.es2015.js
-      //
-      // Use a <script type="module"> tag so these are only run in browsers that have
-      // ES2015 module loading.
-      treeAdapter.appendChild(body, createScriptElement(toUrl(s), true));
-    } else {
-      // Note: empty string value is equivalent to a bare attribute, according to
-      // https://github.com/inikulin/parse5/issues/1
-      const nomoduleAttr = hasMatchingModule(s) ? false : undefined;
-
-      treeAdapter.appendChild(
-        body,
-        createScriptElement(toUrl(s), nomoduleAttr)
-      );
-    }
-  }
+  return asset;
 }
 
-function insertCss({ head, toUrl }: NodeUtils, paths: string[]) {
-  for (const css of paths) {
-    const stylesheet = treeAdapter.createElement("link", "", [
-      { name: "rel", value: "stylesheet" },
-      { name: "href", value: toUrl(css) },
-    ]);
-    treeAdapter.appendChild(head, stylesheet);
+function insertScript(
+  { body }: DOMUtils,
+  url: string,
+  module: boolean | undefined
+) {
+  const attrs: parse5.Attribute[] = [];
+  if (module === true) {
+    attrs.push({ name: "type", value: "module" });
+  } else if (module === false) {
+    // Note: empty string value is equivalent to a bare attribute, according to
+    // https://github.com/inikulin/parse5/issues/1
+    attrs.push({ name: "nomodule", value: "" });
   }
+
+  attrs.push({ name: "src", value: url });
+
+  const script = treeAdapter.createElement("script", "", attrs);
+
+  treeAdapter.appendChild(body, script);
 }
 
-function insertFavicons({ head, toUrl }: NodeUtils, paths: string[]) {
-  for (const ico of paths) {
-    const icoLink = treeAdapter.createElement("link", "", [
-      { name: "rel", value: "shortcut icon" },
-      { name: "type", value: "image/ico" },
-      { name: "href", value: toUrl(ico) },
-    ]);
-    treeAdapter.appendChild(head, icoLink);
-  }
+function insertCss({ head }: DOMUtils, url: string) {
+  const stylesheet = treeAdapter.createElement("link", "", [
+    { name: "rel", value: "stylesheet" },
+    { name: "href", value: url },
+  ]);
+  treeAdapter.appendChild(head, stylesheet);
+}
+
+function insertFavicon({ head }: DOMUtils, url: string) {
+  const icoLink = treeAdapter.createElement("link", "", [
+    { name: "rel", value: "shortcut icon" },
+    { name: "type", value: "image/ico" },
+    { name: "href", value: url },
+  ]);
+  treeAdapter.appendChild(head, icoLink);
 }
 
 function createLogger(verbose: boolean) {
@@ -361,8 +395,8 @@ function main(params: string[], write = mkdirpWrite) {
   const {
     inputFile,
     outputFile,
-    assets,
-    preloadAssets,
+    assetPaths,
+    preloadAssetPaths,
     rootDirs,
     stampType,
     strict,
@@ -375,12 +409,15 @@ function main(params: string[], write = mkdirpWrite) {
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
-  Object.entries(assets).forEach(([type, typeAssets]) =>
-    log("files (%s): %s", type, typeAssets)
+
+  // Convert generic paths to assets
+  const assets = assetPaths.map(path =>
+    guessES2015Modules(guessPathToAsset(path), assetPaths)
   );
-  Object.entries(preloadAssets).forEach(([type, typeAssets]) =>
-    log("preload files (%s): %s", type, typeAssets)
-  );
+  const preloadAssets = preloadAssetPaths.map(path => guessPathToAsset(path));
+
+  assets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
+  preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
 
   const document = parse5.parse(
     fs.readFileSync(inputFile, { encoding: "utf-8" }),
@@ -453,37 +490,39 @@ function main(params: string[], write = mkdirpWrite) {
     return execPath;
   }
 
-  const utils: NodeUtils = { toUrl, body, head };
+  const utils: DOMUtils = { body, head };
 
   // Insertion of various asset preload types
-  for (const [type, prePaths] of Object.entries(preloadAssets)) {
-    if (type in PRELOAD_TYPES) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      insertPreloads(utils, prePaths, (PRELOAD_TYPES as any)[type]);
+  for (const { type, uri } of preloadAssets) {
+    if (PRELOAD_TYPES[type]) {
+      insertPreload(utils, toUrl(uri), PRELOAD_TYPES[type]!);
     } else if (strict) {
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw newError(`Unknown preload type(${type}), paths(${prePaths})`);
+      throw newError(`Unknown preload type: ${uri}`);
     }
   }
 
   // Insertion of various asset types
-  for (const [type, paths] of Object.entries(assets)) {
+  for (const asset of assets) {
+    const { type, uri } = asset;
+    const url = toUrl(uri);
+
     switch (type) {
-      case "js":
-        insertScripts(utils, paths);
+      case AssetType.JS:
+      case AssetType.MJS:
+        insertScript(utils, url, (asset as JsAsset).module);
         break;
 
-      case "css":
-        insertCss(utils, paths);
+      case AssetType.CSS:
+        insertCss(utils, url);
         break;
 
-      case "ico":
-        insertFavicons(utils, paths);
+      case AssetType.FAVICON:
+        insertFavicon(utils, url);
         break;
 
       default:
-        // eslint-disable-next-line no-case-declarations, @typescript-eslint/restrict-template-expressions
-        const msg = `Unknown asset type(${type}), paths(${paths})`;
+        // eslint-disable-next-line no-case-declarations
+        const msg = `Unknown asset: ${uri}`;
         if (strict) {
           throw newError(msg);
         } else {
