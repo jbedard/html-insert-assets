@@ -1415,6 +1415,124 @@ describe("--favicons", () => {
   });
 });
 
+describe("--stylesheets", () => {
+  it("should ensure css asset paths start with a absolute or relative indicator", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "./a.css",
+      "/b.css",
+      "c.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="/b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
+    );
+  });
+
+  it("should inject .css files as stylesheet link tags", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stylesheets",
+        "path/to/my.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
+    );
+  });
+
+  it("should strip the longest matching prefix for .css files", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--roots",
+        "path",
+        "path/to",
+        "--stylesheets",
+        "path/to/my.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./my.css"></head><body></body></html>'
+    );
+  });
+
+  it("should inject .css files when --assets= is used", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--stylesheets=path/to/my.css",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
+    );
+  });
+
+  it("should support media attributes", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "--media=print",
+      "./a.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css" media="print"></head><body></body></html>'
+    );
+  });
+
+  it("should support media attributes with spaces", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "--media",
+      "screen and (max-width: 600px)",
+      "./a.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css" media="screen and (max-width: 600px)"></head><body></body></html>'
+    );
+  });
+
+  it("should support multiple --stylesheet sets with different configs", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "--media=print",
+      "./a.css",
+      "--stylesheets",
+      "--media",
+      "screen and (max-width: 600px)",
+      "./b.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css" media="print"><link rel="stylesheet" href="./b.css" media="screen and (max-width: 600px)"></head><body></body></html>'
+    );
+  });
+});
+
 describe("preloading", () => {
   it("should support preload type=script (js)", () => {
     expect(

@@ -272,6 +272,35 @@ function readFaviconArgs(favicons: Asset[], params: string[], i: number) {
   return i - 1;
 }
 
+function readStylesheetArgs(stylesheets: Asset[], params: string[], i: number) {
+  const attributes: { [k: string]: string } = {};
+
+  while (i < params.length && params[i].startsWith("--")) {
+    const param = params[i++];
+
+    switch (param) {
+      case "--media":
+        attributes[param.slice(2)] = params[i++];
+        break;
+
+      default:
+        throw newError(`Unknown --stylesheets arg: ${param}`);
+    }
+  }
+
+  do {
+    const uri = params[i];
+
+    stylesheets.push({
+      type: AssetType.CSS,
+      uri,
+      attributes,
+    });
+  } while (i < params.length && !params[++i].startsWith("--"));
+
+  return i - 1;
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
 const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
   [AssetType.JS]: "script",
@@ -295,6 +324,7 @@ function parseArgs(cmdParams: string[]) {
   let outputFile = "";
   const scriptAssets: JsAsset[] = [];
   const faviconAssets: Asset[] = [];
+  const stylesheetAssets: Asset[] = [];
   let assetPaths: string[] = [];
   let preloadAssetPaths: string[] = [];
   let rootDirs: string[] = [];
@@ -323,6 +353,10 @@ function parseArgs(cmdParams: string[]) {
 
       case "--favicons":
         i = readFaviconArgs(faviconAssets, params, i + 1);
+        break;
+
+      case "--stylesheets":
+        i = readStylesheetArgs(stylesheetAssets, params, i + 1);
         break;
 
       case "--preload":
@@ -375,6 +409,7 @@ function parseArgs(cmdParams: string[]) {
     outputFile,
     scriptAssets,
     faviconAssets,
+    stylesheetAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -554,6 +589,7 @@ function main(params: string[], write = mkdirpWrite) {
     outputFile,
     scriptAssets,
     faviconAssets,
+    stylesheetAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -576,7 +612,12 @@ function main(params: string[], write = mkdirpWrite) {
   const preloadAssets = preloadAssetPaths.map(path => guessPathToAsset(path));
 
   // Merge the various asset types
-  const assets = [...scriptAssets, ...faviconAssets, ...guessedAssets];
+  const assets = [
+    ...scriptAssets,
+    ...faviconAssets,
+    ...stylesheetAssets,
+    ...guessedAssets,
+  ];
 
   assets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
   preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
