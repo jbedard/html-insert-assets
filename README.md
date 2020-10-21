@@ -17,13 +17,16 @@ Preload assets such as as .js, .css, images (ico, jpg, png, gif) inserted as `<l
 Functionality shared across asset types using .js assets for simplicity.
 
 Basic relative paths:
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --assets ./a.js b.js sub/c.js
 ```
+
 will insert:
+
 ```html
 <script src="./a.js"></script>
 <script src="./b.js"></script>
@@ -31,13 +34,16 @@ will insert:
 ```
 
 If the `--out` file is in a separate directory, URLs are relative to that directory
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./sub/index.html
     --assets ./a.js b.js sub/c.js
 ```
+
 will insert:
+
 ```html
 <script src="../a.js"></script>
 <script src="../b.js"></script>
@@ -45,14 +51,17 @@ will insert:
 ```
 
 Root asset directories to trim and convert to URLs relative to the the `--out` directory
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --root .
     --assets ./a.js b.js sub/c.js
 ```
+
 will insert:
+
 ```html
 <script src="./a.js"></script>
 <script src="./b.js"></script>
@@ -60,14 +69,17 @@ will insert:
 ```
 
 Root directories of assets (multiple):
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --root sub /abs/path
     --assets /abs/path/a.js b.js sub/c.js
 ```
+
 will insert:
+
 ```html
 <script src="./a.js"></script>
 <script src="./b.js"></script>
@@ -75,14 +87,17 @@ will insert:
 ```
 
 Root directories of assets (multiple + alternate --out):
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./out/index.html
     --root sub /abs/path
     --assets /abs/path/a.js b.js sub/c.js
 ```
+
 will insert:
+
 ```html
 <script src="./a.js"></script>
 <script src="../b.js"></script>
@@ -90,30 +105,36 @@ will insert:
 ```
 
 Absolute paths outside any root directories:
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out sub/index.html
     --root sub /abs/path
     --assets /path/to/my.js
 ```
+
 will insert:
+
 ```html
     <script src="/path/to/my.js"></script>
 ```
 
 ### Preloading files
 
-Prealoding assets that your page will need soon, which you want to start loading early in the page lifecycle. See https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content for a full description.
+Preloading assets that your page will need very soon, which you want to start loading early in the page lifecycle. See https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content for a full description.
 
 Preloading some .js and .jpg files.
-```
+
+```bash
 html-insert-assets
     --html ./index.tmpl.html
     --out ./index.html
     --preload load-later.js large-image.jpg
 ```
+
 will insert:
+
 ```html
 <link rel="preload" href="./load-later.js">
 <link rel="preload" href="./large-image.jpg">
@@ -122,7 +143,6 @@ will insert:
 ### Stamping
 
 Adds paramaters to inserted URLs to fingerprint URLs to allow HTTP caching with reliable cache busting when resources change. See https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#invalidating_and_updating_cached_responses for a detailed explanation.
-
 
 ## Notes
 
