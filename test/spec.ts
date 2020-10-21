@@ -1279,6 +1279,142 @@ describe("--scripts", () => {
   });
 });
 
+describe("--favicons", () => {
+  it("should ensure favicon asset paths start with a absolute or relative indicator", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "./a.ico",
+      "/b.ico",
+      "c.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="/b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should inject .ico files as icon link tags", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--favicons",
+        "path/to/my.ico",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should strip the longest matching prefix for .ico files", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--roots",
+        "path",
+        "path/to",
+        "--favicons",
+        "path/to/my.ico",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./my.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should default favicon type based on file extension", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "./a.ico",
+      "/b.png",
+      "c.svg",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/png" href="/b.png"><link rel="icon" type="image/svg+xml" href="./c.svg"></head><body></body></html>'
+    );
+  });
+
+  it("should set custom rel attribute with --rel", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "--rel=apple-touch-icon",
+      "./a.ico",
+      "/b.png",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="apple-touch-icon" type="image/ico" href="./a.ico"><link rel="apple-touch-icon" type="image/png" href="/b.png"></head><body></body></html>'
+    );
+  });
+
+  it("should set custom type attribute with --type", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "--type=image/foo",
+      "./a.ico",
+      "/b.png",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/foo" href="./a.ico"><link rel="icon" type="image/foo" href="/b.png"></head><body></body></html>'
+    );
+  });
+
+  it("should set sizes attribute with --sizes", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "--sizes=192x192",
+      "./a.ico",
+      "/b.png",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" sizes="192x192" href="./a.ico"><link rel="icon" type="image/png" sizes="192x192" href="/b.png"></head><body></body></html>'
+    );
+  });
+
+  it("should accept multiple --favicons sets with different configs", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "--sizes=192x192",
+      "./a.ico",
+      "--favicons",
+      "--sizes=123x456",
+      "--rel=apple-touch-icon",
+      "/b.png",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" sizes="192x192" href="./a.ico"><link rel="apple-touch-icon" type="image/png" sizes="123x456" href="/b.png"></head><body></body></html>'
+    );
+  });
+});
+
 describe("preloading", () => {
   it("should support preload type=script (js)", () => {
     expect(

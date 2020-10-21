@@ -49,6 +49,25 @@ function isJsAsset(asset: Asset): asset is JsAsset {
   return asset.type === AssetType.JS || asset.type === AssetType.MJS;
 }
 
+function filenameToExtension(uri: string) {
+  const [, ext] = uri.match(EXTERNAL_FILE_TYPE_RE) ||
+    uri.match(FILE_TYPE_RE) || [undefined, undefined];
+
+  return ext?.toLowerCase();
+}
+
+function filenameToImageMimeType(uri: string) {
+  const ext = filenameToExtension(uri) ?? "ico";
+
+  switch (ext) {
+    case "svg":
+      return "image/svg+xml";
+
+    default:
+      return `image/${ext}`;
+  }
+}
+
 function guessTypeFromFileExt(ext: string) {
   switch (ext) {
     case "js":
@@ -68,16 +87,28 @@ function guessTypeFromFileExt(ext: string) {
   }
 }
 
-function guessPathToAsset(uri: string): Asset {
-  const r = uri.match(EXTERNAL_FILE_TYPE_RE) || uri.match(FILE_TYPE_RE);
-  const [, ext] = r || ["", "(no ext)"];
+function guessAttributes(uri: string, type: AssetType): Attributes {
+  switch (type) {
+    case AssetType.FAVICON:
+      return {
+        rel: "shortcut icon",
+        type: filenameToImageMimeType(uri),
+      };
 
-  const type = guessTypeFromFileExt(ext.toLowerCase());
+    default:
+      return {};
+  }
+}
+
+function guessPathToAsset(uri: string): Asset {
+  const ext = filenameToExtension(uri) ?? "";
+  const type = guessTypeFromFileExt(ext);
+  const attributes = guessAttributes(uri, type);
 
   return {
     type,
     uri,
-    attributes: {},
+    attributes,
   };
 }
 
@@ -206,6 +237,41 @@ function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
   return i - 1;
 }
 
+function readFaviconArgs(favicons: Asset[], params: string[], i: number) {
+  const attributes: { [k: string]: string } = {};
+
+  while (i < params.length && params[i].startsWith("--")) {
+    const param = params[i++];
+
+    switch (param) {
+      case "--rel":
+      case "--sizes":
+      case "--type":
+        attributes[param.slice(2)] = params[i++];
+        break;
+
+      default:
+        throw newError(`Unknown --favicons arg: ${param}`);
+    }
+  }
+
+  do {
+    const uri = params[i];
+
+    favicons.push({
+      type: AssetType.FAVICON,
+      uri,
+      attributes: {
+        rel: "icon",
+        type: filenameToImageMimeType(uri),
+        ...attributes,
+      },
+    });
+  } while (i < params.length && !params[++i].startsWith("--"));
+
+  return i - 1;
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
 const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
   [AssetType.JS]: "script",
@@ -228,6 +294,7 @@ function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
   const scriptAssets: JsAsset[] = [];
+  const faviconAssets: Asset[] = [];
   let assetPaths: string[] = [];
   let preloadAssetPaths: string[] = [];
   let rootDirs: string[] = [];
@@ -252,6 +319,10 @@ function parseArgs(cmdParams: string[]) {
 
       case "--scripts":
         i = readScriptArgs(scriptAssets, params, i + 1);
+        break;
+
+      case "--favicons":
+        i = readFaviconArgs(faviconAssets, params, i + 1);
         break;
 
       case "--preload":
@@ -303,6 +374,7 @@ function parseArgs(cmdParams: string[]) {
     inputFile,
     outputFile,
     scriptAssets,
+    faviconAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -392,10 +464,8 @@ function insertFavicon(
   attributes: Attributes
 ) {
   const icoLink = treeAdapter.createElement("link", "", [
-    { name: "rel", value: "shortcut icon" },
-    { name: "type", value: "image/ico" },
-    { name: "href", value: url },
     ...attributesToParse5(attributes),
+    { name: "href", value: url },
   ]);
   treeAdapter.appendChild(head, icoLink);
 }
@@ -483,6 +553,7 @@ function main(params: string[], write = mkdirpWrite) {
     inputFile,
     outputFile,
     scriptAssets,
+    faviconAssets,
     assetPaths,
     preloadAssetPaths,
     rootDirs,
@@ -505,7 +576,7 @@ function main(params: string[], write = mkdirpWrite) {
   const preloadAssets = preloadAssetPaths.map(path => guessPathToAsset(path));
 
   // Merge the various asset types
-  const assets = [...scriptAssets, ...guessedAssets];
+  const assets = [...scriptAssets, ...faviconAssets, ...guessedAssets];
 
   assets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
   preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
