@@ -1225,6 +1225,23 @@ describe("--scripts", () => {
     );
   });
 
+  it("should allow adding multiple arbitrary attributes using --attr", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--scripts",
+      "--attr",
+      "foo=bar",
+      "baz=biz",
+      "a.js",
+    ]);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js" foo="bar" baz="biz"></script></body></html>'
+    );
+  });
+
   it("should allow adding attributes such as crossorigin", () => {
     mainTest([
       "--out",

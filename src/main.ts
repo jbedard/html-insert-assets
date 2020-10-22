@@ -193,9 +193,12 @@ function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
         break;
 
       case "--attr":
-        // eslint-disable-next-line no-case-declarations
-        const [key, value] = params[i++].split("=", 2);
-        attributes[key] = value || "";
+        do {
+          // eslint-disable-next-line no-case-declarations
+          const [key, value] = params[i++].split("=", 2);
+          attributes[key] = value || "";
+        } while (!params[i].startsWith("--") && params[i].includes("="));
+
         break;
 
       default:
