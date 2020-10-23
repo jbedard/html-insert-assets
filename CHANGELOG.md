@@ -1,3 +1,14 @@
+# [0.12.0](https://github.com/jbedard/html-insert-assets/compare/v0.11.0...v0.12.0) (2020-10-23)
+
+
+### Features
+
+* **favicon:** add --favicons for specifying favicons ([88df88e](https://github.com/jbedard/html-insert-assets/commit/88df88e60577a22b166595e2a0ed6a4789df8b35))
+* **script:** allow adding multiple attributes to a <script> ([5958f28](https://github.com/jbedard/html-insert-assets/commit/5958f28ef43a71ef251a80e69ec4654ea0fda5fc))
+* **stylesheets:** add --stylesheets for specifying stylesheets ([ae279fb](https://github.com/jbedard/html-insert-assets/commit/ae279fb6002d13ead056741070986f15341c0433))
+
+
+
 # [0.11.0](https://github.com/jbedard/html-insert-assets/compare/v0.11.0-beta.0...v0.11.0) (2020-10-19)
 
 
