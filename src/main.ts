@@ -210,7 +210,7 @@ function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
 
   do {
     uris.push(params[i]);
-  } while (i < params.length && !params[++i].startsWith("--"));
+  } while (++i < params.length && !params[i].startsWith("--"));
 
   uris.forEach(uri => {
     let type: AssetType;

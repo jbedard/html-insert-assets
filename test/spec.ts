@@ -2227,4 +2227,18 @@ describe("parseArgs", () => {
     ]);
     expect(assetPaths).toEqual(["./a.js", "./b.js", "./b.css", "./c.ico"]);
   });
+
+  describe("--scripts", () => {
+    it("should throw for --scripts with no files listed followed by additional params", () => {
+      expect(() =>
+        parseArgs([...REQUIRE_PARAMS, "--scripts", "--hash"])
+      ).toThrow();
+    });
+
+    it("shoudl NOT throw when --scripts and valid files passed as the last arg", () => {
+      expect(() =>
+        parseArgs([...REQUIRE_PARAMS, "--scripts", "foo.js"])
+      ).not.toThrow();
+    });
+  });
 });
