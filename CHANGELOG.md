@@ -1,3 +1,12 @@
+## [0.12.2](https://github.com/jbedard/html-insert-assets/compare/v0.12.1...v0.12.2) (2020-12-12)
+
+
+### Bug Fixes
+
+* maintain node v10 support ([0211ad2](https://github.com/jbedard/html-insert-assets/commit/0211ad29821f149f11e81dee696781b79ed827f7))
+
+
+
 ## [0.12.1](https://github.com/jbedard/html-insert-assets/compare/v0.12.0...v0.12.1) (2020-12-12)
 
 
