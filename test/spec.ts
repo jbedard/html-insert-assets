@@ -597,7 +597,7 @@ describe("--assets", () => {
         "c.ico",
       ]);
       expect(output).toBe(
-        '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="/b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="/b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
       );
     });
 
@@ -613,7 +613,7 @@ describe("--assets", () => {
         ])
       ).toBe(0);
       expect(output).toBe(
-        '<html><head><link rel="shortcut icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
       );
     });
 
@@ -632,7 +632,7 @@ describe("--assets", () => {
         ])
       ).toBe(0);
       expect(output).toBe(
-        '<html><head><link rel="shortcut icon" type="image/ico" href="./my.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" type="image/ico" href="./my.ico"></head><body></body></html>'
       );
     });
   });
@@ -1513,7 +1513,7 @@ describe("--favicons", () => {
       "./b.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
     );
   });
 
@@ -1529,7 +1529,7 @@ describe("--favicons", () => {
       "./b.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
     );
   });
 
@@ -1547,7 +1547,7 @@ describe("--favicons", () => {
       "./c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
     );
   });
 
@@ -1565,7 +1565,7 @@ describe("--favicons", () => {
       "./c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
     );
   });
 });
@@ -1967,7 +1967,7 @@ describe("stamping", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="shortcut icon" type="image/ico" href="./favicon.ico?v=42"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
+      '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="icon" type="image/ico" href="./favicon.ico?v=42"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
     );
   });
 
@@ -2033,7 +2033,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
     );
   });
 
@@ -2056,7 +2056,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
     );
   });
 
@@ -2079,7 +2079,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
     );
   });
 
@@ -2150,7 +2150,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH}"></script></body></html>`
     );
   });
 
@@ -2174,7 +2174,7 @@ describe("stamping", () => {
     expect(output).toBe(
       `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
         -5
-      )}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+      )}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
         -5
       )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
         -5
@@ -2221,7 +2221,7 @@ describe("stamping", () => {
     expect(output).toBe(
       `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
         -8
-      )}"><link rel="shortcut icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+      )}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
         -8
       )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
         -8

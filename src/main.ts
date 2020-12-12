@@ -91,7 +91,7 @@ function guessAttributes(uri: string, type: AssetType): Attributes {
   switch (type) {
     case AssetType.FAVICON:
       return {
-        rel: "shortcut icon",
+        rel: "icon",
         type: filenameToImageMimeType(uri),
       };
 
