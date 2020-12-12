@@ -1,3 +1,23 @@
+## [0.12.1](https://github.com/jbedard/html-insert-assets/compare/v0.12.0...v0.12.1) (2020-12-12)
+
+
+### Bug Fixes
+
+* ensure order is maintain between --assets and --scripts/stylesheets/favicons ([30506bf](https://github.com/jbedard/html-insert-assets/commit/30506bf9af3b6da768d17022f2ecc3e21789cef1))
+* **script:** fix crash when --scripts used as last arg ([dcd77dc](https://github.com/jbedard/html-insert-assets/commit/dcd77dceca4a457151e15b1c70fdaafaea9ef194))
+
+
+### Code Refactoring
+
+* **favicon:** replace non-standard "shortcut icon" with "icon" for <link rel> attribute ([fcfda0d](https://github.com/jbedard/html-insert-assets/commit/fcfda0d77a1c4b153eb6066f46093e1ce010d276))
+
+
+### BREAKING CHANGES
+
+* **favicon:** this will change the output of --assets *.ico
+
+
+
 # [0.12.0](https://github.com/jbedard/html-insert-assets/compare/v0.11.0...v0.12.0) (2020-10-23)
 
 
