@@ -1296,6 +1296,74 @@ describe("--scripts", () => {
       '<html><head></head><body><script src="./a.js" foo="1"></script><script src="./b.js" async=""></script></body></html>'
     );
   });
+
+  it("should support mixing --scripts and --assets while maintaing order of scripts (assets, scripts)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "a.js",
+      "--scripts",
+      "b.js",
+    ]);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script></body></html>'
+    );
+  });
+
+  it("should support mixing --scripts and --assets while maintaing order of scripts (scripts, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--scripts",
+      "a.js",
+      "--assets",
+      "b.js",
+    ]);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script></body></html>'
+    );
+  });
+
+  it("should support mixing --scripts and --assets while maintaing order of scripts (scripts, assets, scripts)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--scripts",
+      "a.js",
+      "--assets",
+      "b.js",
+      "--scripts",
+      "c.js",
+    ]);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script><script src="./c.js"></script></body></html>'
+    );
+  });
+
+  it("should support mixing --scripts and --assets while maintaing order of scripts (assets, scripts, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "a.js",
+      "--scripts",
+      "b.js",
+      "--assets",
+      "c.js",
+    ]);
+    expect(output).toBe(
+      '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script><script src="./c.js"></script></body></html>'
+    );
+  });
 });
 
 describe("--favicons", () => {
@@ -1432,6 +1500,74 @@ describe("--favicons", () => {
       '<html><head><link rel="icon" type="image/ico" sizes="192x192" href="./a.ico"><link rel="apple-touch-icon" type="image/png" sizes="123x456" href="/b.png"></head><body></body></html>'
     );
   });
+
+  it("should support mixing --favicons and --assets while maintaing order of favicons (favicons, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "./a.ico",
+      "--assets",
+      "./b.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --favicons and --assets while maintaing order of favicons (assets, favicons)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.ico",
+      "--favicons",
+      "./b.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --favicons and --assets while maintaing order of favicons (favicons, assets, favicons)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--favicons",
+      "./a.ico",
+      "--assets",
+      "./b.ico",
+      "--favicons",
+      "./c.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="shortcut icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --favicons and --assets while maintaing order of favicons (assets, favicons, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.ico",
+      "--favicons",
+      "./b.ico",
+      "--assets",
+      "./c.ico",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="shortcut icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="shortcut icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+    );
+  });
 });
 
 describe("--stylesheets", () => {
@@ -1532,7 +1668,7 @@ describe("--stylesheets", () => {
     );
   });
 
-  it("should support multiple --stylesheet sets with different configs", () => {
+  it("should support multiple --stylesheets sets with different configs", () => {
     mainTest([
       "--out",
       "index.html",
@@ -1548,6 +1684,74 @@ describe("--stylesheets", () => {
     ]);
     expect(output).toBe(
       '<html><head><link rel="stylesheet" href="./a.css" media="print"><link rel="stylesheet" href="./b.css" media="screen and (max-width: 600px)"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --stylesheets and --assets while maintaing order of stylesheets (stylesheets, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "./a.css",
+      "--assets",
+      "./b.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="./b.css"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --stylesheets and --assets while maintaing order of stylesheets (assets, stylesheets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.css",
+      "--stylesheets",
+      "./b.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="./b.css"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --stylesheets and --assets while maintaing order of stylesheets (assets, stylesheets, assets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--assets",
+      "./a.css",
+      "--stylesheets",
+      "./b.css",
+      "--assets",
+      "./c.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="./b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
+    );
+  });
+
+  it("should support mixing --stylesheets and --assets while maintaing order of stylesheets (stylesheets, assets, stylesheets)", () => {
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--stylesheets",
+      "./a.css",
+      "--assets",
+      "./b.css",
+      "--stylesheets",
+      "./c.css",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="./b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
     );
   });
 });
@@ -2031,6 +2235,10 @@ describe("stamping", () => {
 describe("parseArgs", () => {
   const REQUIRE_PARAMS = ["--out", "foo.html", "--html", "in.html"];
 
+  function pluckUri({ uri }: { uri: string }) {
+    return uri;
+  }
+
   it("should accept a single --out and --html", () => {
     const { outputFile, inputFile } = parseArgs([
       "--out",
@@ -2107,9 +2315,9 @@ describe("parseArgs", () => {
   });
 
   it("should accept no assets arg", () => {
-    const { assetPaths } = parseArgs([...REQUIRE_PARAMS]);
+    const { assets } = parseArgs([...REQUIRE_PARAMS]);
 
-    expect(assetPaths).toEqual([]);
+    expect(assets).toEqual([]);
   });
 
   it("should accept empty roots", () => {
@@ -2161,8 +2369,8 @@ describe("parseArgs", () => {
     const {
       outputFile,
       inputFile,
-      assetPaths,
-      preloadAssetPaths,
+      assets,
+      preloadAssets,
       rootDirs,
     } = parseArgs([
       "--out",
@@ -2182,8 +2390,8 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assetPaths).toEqual(["./a.js", "./b.js"]);
-    expect(preloadAssetPaths).toEqual(["./e.js", "./f.css"]);
+    expect(assets.map(pluckUri)).toEqual(["./a.js", "./b.js"]);
+    expect(preloadAssets.map(pluckUri)).toEqual(["./e.js", "./f.css"]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -2191,8 +2399,8 @@ describe("parseArgs", () => {
     const {
       outputFile,
       inputFile,
-      assetPaths,
-      preloadAssetPaths,
+      assets,
+      preloadAssets,
       rootDirs,
     } = parseArgs([
       "--out=./out",
@@ -2207,8 +2415,8 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assetPaths).toEqual(["./a.js", "./b.js"]);
-    expect(preloadAssetPaths).toEqual(["./e.js", "./f.css"]);
+    expect(assets.map(pluckUri)).toEqual(["./a.js", "./b.js"]);
+    expect(preloadAssets.map(pluckUri)).toEqual(["./e.js", "./f.css"]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -2217,7 +2425,7 @@ describe("parseArgs", () => {
   });
 
   it("should accept multiple assets", () => {
-    const { assetPaths } = parseArgs([
+    const { assets } = parseArgs([
       ...REQUIRE_PARAMS,
       "--assets",
       "./a.js",
@@ -2225,7 +2433,12 @@ describe("parseArgs", () => {
       "./b.css",
       "./c.ico",
     ]);
-    expect(assetPaths).toEqual(["./a.js", "./b.js", "./b.css", "./c.ico"]);
+    expect(assets.map(pluckUri)).toEqual([
+      "./a.js",
+      "./b.js",
+      "./b.css",
+      "./c.ico",
+    ]);
   });
 
   describe("--scripts", () => {

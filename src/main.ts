@@ -100,7 +100,7 @@ function guessAttributes(uri: string, type: AssetType): Attributes {
   }
 }
 
-function guessPathToAsset(uri: string): Asset {
+function guessAssetFromPath(uri: string): Asset {
   const ext = filenameToExtension(uri) ?? "";
   const type = guessTypeFromFileExt(ext);
   const attributes = guessAttributes(uri, type);
@@ -151,7 +151,7 @@ function removeExternal(p: string) {
 }
 
 function readVarArgs(params: string[], i: number): [string[], number] {
-  const args = [];
+  const args: string[] = [];
   while (i < params.length && !params[i].startsWith("--")) {
     args.push(params[i++]);
   }
@@ -170,10 +170,17 @@ function readOptionalParam(
   return [defaultValue, i - 1];
 }
 
-function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
+function readGenericAssets(assets: Asset[], params: string[], i: number) {
+  while (i < params.length && !params[i].startsWith("--")) {
+    assets.push(guessAssetFromPath(params[i++]));
+  }
+  return i - 1;
+}
+
+function readScriptArgs(assets: Asset[], params: string[], i: number) {
   const attributes: { [attr: string]: string } = {};
 
-  let allModules: boolean | undefined = undefined;
+  let module: boolean | undefined = undefined;
 
   while (i < params.length && params[i].startsWith("--")) {
     const param = params[i++];
@@ -185,11 +192,11 @@ function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
 
       case "--module":
       case "--nomodule":
-        if (allModules !== undefined) {
+        if (module !== undefined) {
           throw newError("Both --module and --nomodule specified");
         }
 
-        allModules = param === "--module";
+        module = param === "--module";
         break;
 
       case "--attr":
@@ -206,41 +213,24 @@ function readScriptArgs(scriptAssets: JsAsset[], params: string[], i: number) {
     }
   }
 
-  const uris: string[] = [];
-
   do {
-    uris.push(params[i]);
-  } while (++i < params.length && !params[i].startsWith("--"));
+    const uri = params[i];
+    const type = module ? AssetType.MJS : AssetType.JS;
 
-  uris.forEach(uri => {
-    let type: AssetType;
-    let module = allModules;
-
-    // If specified via --[no]module then used that
-    if (module !== undefined) {
-      type = module ? AssetType.MJS : AssetType.JS;
-    }
-    // Otherwise determine it based on filename
-    else if (ES2015_RE.test(uri)) {
-      type = AssetType.MJS;
-      module = true;
-    } else {
-      type = AssetType.JS;
-      module = hasMatchingModule(uri, uris) ? false : undefined;
-    }
-
-    scriptAssets.push({
+    const jsAsset: JsAsset = {
       type,
       uri,
       module,
       attributes,
-    });
-  });
+    };
+
+    assets.push(jsAsset);
+  } while (++i < params.length && !params[i].startsWith("--"));
 
   return i - 1;
 }
 
-function readFaviconArgs(favicons: Asset[], params: string[], i: number) {
+function readFaviconArgs(assets: Asset[], params: string[], i: number) {
   const attributes: { [k: string]: string } = {};
 
   while (i < params.length && params[i].startsWith("--")) {
@@ -261,7 +251,7 @@ function readFaviconArgs(favicons: Asset[], params: string[], i: number) {
   do {
     const uri = params[i];
 
-    favicons.push({
+    assets.push({
       type: AssetType.FAVICON,
       uri,
       attributes: {
@@ -275,7 +265,7 @@ function readFaviconArgs(favicons: Asset[], params: string[], i: number) {
   return i - 1;
 }
 
-function readStylesheetArgs(stylesheets: Asset[], params: string[], i: number) {
+function readStylesheetArgs(assets: Asset[], params: string[], i: number) {
   const attributes: { [k: string]: string } = {};
 
   while (i < params.length && params[i].startsWith("--")) {
@@ -294,7 +284,7 @@ function readStylesheetArgs(stylesheets: Asset[], params: string[], i: number) {
   do {
     const uri = params[i];
 
-    stylesheets.push({
+    assets.push({
       type: AssetType.CSS,
       uri,
       attributes,
@@ -325,11 +315,14 @@ function insertPreload({ head }: DOMUtils, uri: string, preloadAs: string) {
 function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
-  const scriptAssets: JsAsset[] = [];
-  const faviconAssets: Asset[] = [];
-  const stylesheetAssets: Asset[] = [];
-  let assetPaths: string[] = [];
-  let preloadAssetPaths: string[] = [];
+
+  // All assets to be inserted into the DOM, of all types.
+  // In the order parsed from the CLI.
+  const assets: Asset[] = [];
+
+  // All assets to be preloaded
+  const preloadAssets: Asset[] = [];
+
   let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
@@ -347,23 +340,23 @@ function parseArgs(cmdParams: string[]) {
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
       case "--assets":
-        [assetPaths, i] = readVarArgs(params, i + 1);
+        i = readGenericAssets(assets, params, i + 1);
         break;
 
       case "--scripts":
-        i = readScriptArgs(scriptAssets, params, i + 1);
+        i = readScriptArgs(assets, params, i + 1);
         break;
 
       case "--favicons":
-        i = readFaviconArgs(faviconAssets, params, i + 1);
+        i = readFaviconArgs(assets, params, i + 1);
         break;
 
       case "--stylesheets":
-        i = readStylesheetArgs(stylesheetAssets, params, i + 1);
+        i = readStylesheetArgs(assets, params, i + 1);
         break;
 
       case "--preload":
-        [preloadAssetPaths, i] = readVarArgs(params, i + 1);
+        i = readGenericAssets(preloadAssets, params, i + 1);
         break;
 
       case "--strict":
@@ -410,11 +403,8 @@ function parseArgs(cmdParams: string[]) {
   return {
     inputFile,
     outputFile,
-    scriptAssets,
-    faviconAssets,
-    stylesheetAssets,
-    assetPaths,
-    preloadAssetPaths,
+    assets,
+    preloadAssets,
     rootDirs,
     stampType,
     strict,
@@ -422,43 +412,55 @@ function parseArgs(cmdParams: string[]) {
   };
 }
 
-function hasMatchingModule(uri: string, all: string[]) {
+function hasMatchingModule(uri: string, all: Asset[]) {
   const noExt = uri.slice(0, uri.lastIndexOf("."));
   const testMjs = `${noExt}.mjs`.toLowerCase();
   const testEs2015 = `${noExt}.es2015.js`.toLowerCase();
   return all.some(t => {
-    const lc = t.toLowerCase();
+    const lc = t.uri.toLowerCase();
     return lc === testMjs || lc === testEs2015;
   });
 }
 
-function guessES2015Modules(asset: Asset, all: string[]): Asset | JsAsset {
-  if (!isJsAsset(asset) || EXTERNAL_RE.test(asset.uri)) {
-    return asset;
+// Detect if an Asset is a JsAsset without a known module type
+function isJsAssetWithoutModule(
+  asset: Asset
+): asset is JsAsset & { module: undefined } {
+  return !(
+    // No processing for external resources
+    (
+      EXTERNAL_RE.test(asset.uri) ||
+      // Only JS assets have any processing
+      !isJsAsset(asset) ||
+      // If the module was explicitly defined then no need to guess
+      asset.module !== undefined
+    )
+  );
+}
+
+// Guess JsAsset module type based on file info
+// ESModule is assumed for filenames like
+//  foo.mjs
+//  bar.es2015.js
+function detectModuleByType(a: Asset) {
+  if (isJsAssetWithoutModule(a) && ES2015_RE.test(a.uri)) {
+    return { ...a, module: true };
   }
 
-  const { type, uri } = asset;
+  return a;
+}
 
-  // Differential loading: for filenames like
-  //  foo.mjs
-  //  bar.es2015.js
-  //
-  // Use a <script type="module"> tag so these are only run in browsers that have
-  // ES2015 module loading.
-  if (
-    AssetType.MJS === type ||
-    (AssetType.JS === type && ES2015_RE.test(uri))
-  ) {
-    return { ...asset, module: true };
+// Guess JsAsset module type based on association with other files
+// If a non-ESModule file has a matching ESModule version then mark it as [nomodule]
+function detectModuleTypeByAssociation(a: Asset, _: number, all: Asset[]) {
+  if (isJsAssetWithoutModule(a) && hasMatchingModule(a.uri, all)) {
+    return { ...a, module: false };
   }
+  return a;
+}
 
-  // Other filenames we assume are for non-ESModule browsers, so if the file has a matching
-  // ESModule script we add a 'nomodule' attribute
-  if (type === AssetType.JS && hasMatchingModule(uri, all)) {
-    return { ...asset, module: false };
-  }
-
-  return asset;
+function processAssets(assets: Asset[]) {
+  return assets.map(detectModuleByType).map(detectModuleTypeByAssociation);
 }
 
 function attributesToParse5(attributes: Attributes): parse5.Attribute[] {
@@ -590,11 +592,8 @@ function main(params: string[], write = mkdirpWrite) {
   const {
     inputFile,
     outputFile,
-    scriptAssets,
-    faviconAssets,
-    stylesheetAssets,
-    assetPaths,
-    preloadAssetPaths,
+    assets,
+    preloadAssets,
     rootDirs,
     stampType,
     strict,
@@ -608,21 +607,11 @@ function main(params: string[], write = mkdirpWrite) {
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
 
-  // Convert generic paths to assets
-  const guessedAssets = assetPaths.map(path =>
-    guessES2015Modules(guessPathToAsset(path), assetPaths)
-  );
-  const preloadAssets = preloadAssetPaths.map(path => guessPathToAsset(path));
+  // Process and potentially modify the assets from the CLI
+  const processedAssets = processAssets(assets);
 
-  // Merge the various asset types
-  const assets = [
-    ...scriptAssets,
-    ...faviconAssets,
-    ...stylesheetAssets,
-    ...guessedAssets,
-  ];
-
-  assets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
+  // Log all assets
+  processedAssets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
   preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
 
   const document = parse5.parse(
@@ -708,7 +697,7 @@ function main(params: string[], write = mkdirpWrite) {
   }
 
   // Insertion of various asset types
-  for (const asset of assets) {
+  for (const asset of processedAssets) {
     const { type, uri, attributes } = asset;
     const url = toUrl(uri);
 
