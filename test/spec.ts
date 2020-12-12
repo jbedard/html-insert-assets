@@ -496,6 +496,7 @@ describe("--assets", () => {
 
     it("should strip the external workspaces prefix in Windows", () => {
       if (path.win32.normalize !== path.normalize) {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         spyOn(path, "normalize").and.callFake(path.win32.normalize);
       }
 
@@ -1028,6 +1029,7 @@ describe("--scripts", () => {
 
     it("should strip the external workspaces prefix in Windows", () => {
       if (path.win32.normalize !== path.normalize) {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         spyOn(path, "normalize").and.callFake(path.win32.normalize);
       }
 
