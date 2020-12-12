@@ -1,6 +1,6 @@
 {
   "name": "html-insert-assets",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Insert assets such as .js, .css into an HTML file.",
   "repository": {
     "type": "git",
