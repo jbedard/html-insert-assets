@@ -10,13 +10,78 @@ import fs = require("fs");
 import path = require("path");
 import mkdirp = require("mkdirp");
 
-const NPM_NAME = "html-insert-assets";
+const NPM_NAME = process.title || "html-insert-assets";
 
 const EXTERNAL_RE = /^[a-z]+:\/\//;
 const FILE_TYPE_RE = /\.([a-z]+)$/i;
 const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
 const ES2015_RE = /\.(es2015\.|m)js$/i;
 const NOW = String(Date.now());
+
+const HELP_MESSAGE = `
+Basic Configuration:
+  --html path                             The HTML template file to insert assets into.
+  --out path                              The output file path.
+  --roots path [...path]                  The root directories to strip from asset paths.
+
+Options:
+  --stamp [type]                          Add a stamp to asset URLs. Defaults to 'hash=8'
+    Types:
+      none                                Disable stamping.
+      const=X                             Use 'X' as the stamp value.
+      now                                 Use the current epoch timestamp as the value.
+      lastmod                             Use the last-modified timestamp of each file as the value.
+      hash[=#]                            Use the file content sha1 hash of each file as the value.
+                                          Optionally sliced to '#' characters.
+
+Assets:
+  --scripts [options] path [...paths]     JavaScript files to be inserted as <script> elements.
+
+                                          May be specified multiple times to specify different configurations
+                                          and <script> element order (possibly mixed with scripts from --assets).
+
+                                          If neither --module or --nomodule option is specified then the module
+                                          type is determined based on the file name and extension.
+                                          The .mjs extension or filename ending with .es2015.js is assumed to be
+                                          a module. Files are assumed to be nomodule if a corresponding module
+                                          with the same filename.
+                                          For example:
+                                              x.mjs        => module
+                                              x.es2015.js  => module
+                                              x.js         => nomodule if etiher x.mjs or x.es2015.js exists
+    Options:
+      --async                             Add the [async] attribute to the <script> element.
+      --module                            Add the [type="module"] attribute.
+      --nomodule                          Add the [nomodule] attribute.
+      --attr name=value [... name=value]  Add custom attributes.
+
+  --stylesheets [options] path [...path]  Stylesheet files to be inserted as <link rel="stylesheet"> elements.
+                                          May be specified multiple times to specify different configurations
+                                          and <link> element order (possibly mixed with stylesheets from --assets).
+    Options:
+      --media value                       Add the [media] attribute with the specified value.
+
+  --favicons [options] path [...paths]    Add <link rel="icon"> elements for favicons.
+                                          May be specified multiple times to specify different configurations
+                                          and <link> element order (possibly mixed with scripts from --assets).
+    Options:
+      --rel value                         Add the [rel] attribute with the specified value.
+      --sizes value                       Add the [sizes] attribute with the specified value.
+      --type value                        Add the [type] attribute with the specified value.
+
+  --preload path [...path]                Add <link rel="preload" type="?"> elements.
+                                          The [type] is determined based on the file extension.
+
+  --assets path [...path]                 Generic list of assets. The asset type is determined based on the file extension.
+                                          May be specified multiple times to allow configuring asset ordering.
+
+                                          Should normally use the asset specific config such as --scripts.
+
+Miscellaneous:
+  --verbose                               Output more logging information.
+  --strict                                Fail on warnings instead of logging to stderr.
+  --help                                  Show this help message.
+`;
 
 interface DOMUtils {
   body: Node;
@@ -326,6 +391,7 @@ function parseArgs(cmdParams: string[]) {
   let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
+  let help = false;
   let stampType = "hash=8";
 
   const params = cmdParams.reduce<string[]>((a, p) => {
@@ -379,6 +445,10 @@ function parseArgs(cmdParams: string[]) {
         [stampType, i] = readOptionalParam(params, i + 1, stampType);
         break;
 
+      case "--help":
+        help = true;
+        break;
+
       case "--verbose":
         verbose = true;
         break;
@@ -387,18 +457,6 @@ function parseArgs(cmdParams: string[]) {
         throw newError(`Unknown arg: ${params[i]}`);
     }
   }
-
-  if (!inputFile || !outputFile) {
-    throw newError("required: --html, --out");
-  }
-
-  // Normalize fs paths, assets done separately later
-  rootDirs = rootDirs.map(normalizeDirPath);
-  inputFile = inputFile && normalizePath(inputFile);
-  outputFile = outputFile && normalizePath(outputFile);
-
-  // Always trim the longest root first
-  rootDirs.sort((a, b) => b.length - a.length);
 
   return {
     inputFile,
@@ -409,6 +467,7 @@ function parseArgs(cmdParams: string[]) {
     stampType,
     strict,
     verbose,
+    help,
   };
 }
 
@@ -527,7 +586,7 @@ function warn(str: string, ...args: unknown[]) {
 }
 
 function newError(str: string, ...args: unknown[]) {
-  return new Error(`${NPM_NAME}: ${str} ${args.join(" ")}`.trim());
+  return new Error(`${str} ${args.join(" ")}`.trim());
 }
 
 function fileLastModified(file: string) {
@@ -535,9 +594,7 @@ function fileLastModified(file: string) {
     return String(fs.statSync(file).mtime.getTime());
   }
 
-  console.warn(
-    `html-insert-assets: failed to find ${file} to stamp. Will fallback to timestamp.`
-  );
+  warn(`Failed to find ${file} to stamp. Will fallback to timestamp.`);
 
   return NOW;
 }
@@ -552,9 +609,7 @@ function hashFile(file: string) {
       .replace(/[^a-z0-9]/gi, "");
   }
 
-  console.warn(
-    `html-insert-assets: failed to find ${file} to stamp. Will fallback to timestamp.`
-  );
+  warn(`Failed to find ${file} to stamp. Will fallback to timestamp.`);
 
   return NOW;
 }
@@ -588,17 +643,50 @@ function mkdirpWrite(filePath: string, value: string) {
   fs.writeFileSync(filePath, value);
 }
 
+function normalizeArgPaths(
+  inputRootDirs: string[],
+  inputInputFile: string,
+  inputOutputFile: string
+) {
+  const rootDirs = inputRootDirs.map(normalizeDirPath);
+  const inputFile = normalizePath(inputInputFile);
+  const outputFile = normalizePath(inputOutputFile);
+
+  // Always trim the longest root first
+  rootDirs.sort((a, b) => b.length - a.length);
+
+  return { rootDirs, inputFile, outputFile };
+}
+
 function main(params: string[], write = mkdirpWrite) {
   const {
-    inputFile,
-    outputFile,
+    inputFile: inputInputFile,
+    outputFile: inputOutputFile,
     assets,
     preloadAssets,
-    rootDirs,
+    rootDirs: inputRootDirs,
     stampType,
     strict,
     verbose,
+    help,
   } = parseArgs(params);
+
+  if (help) {
+    console.log(HELP_MESSAGE);
+    return 0;
+  }
+
+  if (!inputInputFile || !inputOutputFile) {
+    throw newError("required: --html, --out");
+  }
+
+  // Normalize fs paths, assets done separately later
+  const { inputFile, outputFile, rootDirs } = normalizeArgPaths(
+    inputRootDirs,
+    inputInputFile,
+    inputOutputFile
+  );
+
   const log = createLogger(verbose);
   const stamper = createStamper(stampType);
 
@@ -732,8 +820,9 @@ function main(params: string[], write = mkdirpWrite) {
 }
 
 export {
-  parseArgs,
   main,
   // For testing
+  parseArgs as __parseArgs,
   NOW as __NOW,
+  normalizeArgPaths as __normalizeArgPaths,
 };

@@ -1,7 +1,12 @@
 "use strict";
 
 import path = require("path");
-import { main, parseArgs, __NOW } from "../src/main";
+import {
+  main,
+  __parseArgs as parseArgs,
+  __NOW,
+  __normalizeArgPaths as normalizeArgPaths,
+} from "../src/main";
 
 const inFile = "./test/data/index-template.html";
 const inFileHTML5 = "./test/data/index-html5-template.html";
@@ -2240,12 +2245,16 @@ describe("parseArgs", () => {
   }
 
   it("should accept a single --out and --html", () => {
-    const { outputFile, inputFile } = parseArgs([
-      "--out",
-      "./foo.html",
-      "--html",
-      "index.html",
-    ]);
+    const {
+      outputFile: inputOutputFile,
+      inputFile: inputInputFile,
+    } = parseArgs(["--out", "./foo.html", "--html", "index.html"]);
+
+    const { inputFile, outputFile } = normalizeArgPaths(
+      [],
+      inputInputFile,
+      inputOutputFile
+    );
 
     expect(outputFile).toBe("./foo.html");
     expect(inputFile).toBe("./index.html");
@@ -2254,43 +2263,45 @@ describe("parseArgs", () => {
   it("should throw with multiple --out", () => {
     expect(() =>
       parseArgs(["--html", "validhtml", "--out", "./foo", "./bar"])
-    ).toThrowError("html-insert-assets: Unknown arg: ./bar");
+    ).toThrowError("Unknown arg: ./bar");
   });
 
   it("should throw with multiple --html", () => {
     expect(() =>
       parseArgs(["--out", "foo", "--html", "./foo", "./bar"])
-    ).toThrowError("html-insert-assets: Unknown arg: ./bar");
+    ).toThrowError("Unknown arg: ./bar");
   });
 
   it("should throw with unknown arg", () => {
     expect(() => parseArgs(["--badparam"])).toThrowError(
-      "html-insert-assets: Unknown arg: --badparam"
+      "Unknown arg: --badparam"
     );
   });
 
   it("should throw with no --out and --html", () => {
-    expect(() => parseArgs(["--out", "out"])).toThrowError(
-      "html-insert-assets: required: --html, --out"
+    expect(() => main(["--out", "out"])).toThrowError(
+      "required: --html, --out"
     );
-    expect(() => parseArgs(["--html", "in"])).toThrowError(
-      "html-insert-assets: required: --html, --out"
+    expect(() => main(["--html", "in"])).toThrowError(
+      "required: --html, --out"
     );
   });
 
   it("should normalize roots paths", () => {
-    const { rootDirs } = parseArgs([
+    const { rootDirs: inputRootDirs } = parseArgs([
       ...REQUIRE_PARAMS,
       "--roots",
       "./b/../a/",
       "./././b",
     ]);
 
+    const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
+
     expect(rootDirs).toEqual(["./a/", "./b/"]);
   });
 
   it("should ensure root paths end with a /", () => {
-    const { rootDirs } = parseArgs([
+    const { rootDirs: inputRootDirs } = parseArgs([
       ...REQUIRE_PARAMS,
       "--roots",
       "../a",
@@ -2299,17 +2310,21 @@ describe("parseArgs", () => {
       "/d",
     ]);
 
+    const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
+
     expect(rootDirs).toEqual(["../a/", "./b/", "./c/", "/d/"]);
   });
 
   it("should ensure root paths start with a absolute or relative indicator", () => {
-    const { rootDirs } = parseArgs([
+    const { rootDirs: inputRootDirs } = parseArgs([
       ...REQUIRE_PARAMS,
       "--roots",
       "./a/",
       "b/",
       "/c/",
     ]);
+
+    const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
 
     expect(rootDirs).toEqual(["./a/", "./b/", "/c/"]);
   });
@@ -2329,7 +2344,7 @@ describe("parseArgs", () => {
   });
 
   it("should accept multiple roots", () => {
-    const { rootDirs } = parseArgs([
+    const { rootDirs: inputRootDirs } = parseArgs([
       ...REQUIRE_PARAMS,
       "--roots",
       "./a/",
@@ -2337,11 +2352,13 @@ describe("parseArgs", () => {
       "/abs/path/",
     ]);
 
+    const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
+
     expect(rootDirs).toEqual([`/abs/path/`, `../b/`, `./a/`]);
   });
 
   it("should sort roots by specificity", () => {
-    const { rootDirs } = parseArgs([
+    const { rootDirs: inputRootDirs } = parseArgs([
       ...REQUIRE_PARAMS,
       "--roots",
       "./a/",
@@ -2350,6 +2367,8 @@ describe("parseArgs", () => {
       "/abs/path/",
       "/abs/path/b/",
     ]);
+
+    const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
 
     expect(rootDirs).toEqual([
       "/abs/path/b/",
@@ -2367,11 +2386,11 @@ describe("parseArgs", () => {
 
   it("should work with all args passed", () => {
     const {
-      outputFile,
-      inputFile,
+      outputFile: inputOutputFile,
+      inputFile: inputInputFile,
       assets,
       preloadAssets,
-      rootDirs,
+      rootDirs: inputRootDirs,
     } = parseArgs([
       "--out",
       "./out",
@@ -2388,6 +2407,12 @@ describe("parseArgs", () => {
       "./f.css",
     ]);
 
+    const { rootDirs, inputFile, outputFile } = normalizeArgPaths(
+      inputRootDirs,
+      inputInputFile,
+      inputOutputFile
+    );
+
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
     expect(assets.map(pluckUri)).toEqual(["./a.js", "./b.js"]);
@@ -2397,11 +2422,11 @@ describe("parseArgs", () => {
 
   it("should allow `--param=a b` in addition to `--param a b", () => {
     const {
-      outputFile,
-      inputFile,
+      outputFile: inputOutputFile,
+      inputFile: inputInputFile,
       assets,
       preloadAssets,
-      rootDirs,
+      rootDirs: inputRootDirs,
     } = parseArgs([
       "--out=./out",
       "--html=./in",
@@ -2412,6 +2437,12 @@ describe("parseArgs", () => {
       "--preload=./e.js",
       "./f.css",
     ]);
+
+    const { rootDirs, inputFile, outputFile } = normalizeArgPaths(
+      inputRootDirs,
+      inputInputFile,
+      inputOutputFile
+    );
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
