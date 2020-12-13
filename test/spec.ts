@@ -134,6 +134,9 @@ describe("base", () => {
   });
 
   it("should not throw when non --strict and unknown asset types", () => {
+    // Spy to avaoid output during tests
+    spyOn(console, "warn");
+
     expect(() =>
       mainTest(["--out", "index.html", "--html", inFile, "--assets", "foo"])
     ).not.toThrow();
@@ -1886,6 +1889,9 @@ describe("preloading", () => {
   });
 
   it("should throw when --strict and unknown asset types", () => {
+    // Spy to avaoid output during tests
+    spyOn(console, "warn");
+
     expect(() =>
       mainTest([
         "--out",
@@ -2190,6 +2196,9 @@ describe("stamping", () => {
   });
 
   it("should fallback to current timestamp when a file can not be found", () => {
+    // Spy to avaoid output during tests
+    spyOn(console, "warn");
+
     expect(
       stampTest([
         "--out",
