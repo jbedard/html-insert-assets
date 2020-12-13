@@ -79,6 +79,8 @@ Assets:
 
 Miscellaneous:
   --verbose                               Output more logging information.
+  --quite                                 Surpress some logging + warnings about unnecessary assets being passed such as
+                                          sourcemap files alongside known files.
   --strict                                Fail on warnings instead of logging to stderr.
   --help                                  Show this help message.
 `;
@@ -391,6 +393,7 @@ function parseArgs(cmdParams: string[]) {
   let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
+  let quite = false;
   let help = false;
   let stampType = "hash=8";
 
@@ -427,6 +430,10 @@ function parseArgs(cmdParams: string[]) {
 
       case "--strict":
         strict = true;
+        break;
+
+      case "--quite":
+        quite = true;
         break;
 
       case "--roots":
@@ -466,6 +473,7 @@ function parseArgs(cmdParams: string[]) {
     rootDirs,
     stampType,
     strict,
+    quite,
     verbose,
     help,
   };
@@ -518,7 +526,7 @@ function detectModuleTypeByAssociation(a: Asset, _: number, all: Asset[]) {
   return a;
 }
 
-function processAssets(assets: Asset[]) {
+function processAssets(assets: Asset[]): Asset[] {
   return assets.map(detectModuleByType).map(detectModuleTypeByAssociation);
 }
 
@@ -658,6 +666,15 @@ function normalizeArgPaths(
   return { rootDirs, inputFile, outputFile };
 }
 
+function isSourceMap({ uri }: Asset, assets: Asset[]) {
+  if (path.extname(uri) !== ".map") {
+    return false;
+  }
+
+  const nonMap = uri.slice(0, -4);
+  return assets.some(a => a.uri === nonMap);
+}
+
 function main(params: string[], write = mkdirpWrite) {
   const {
     inputFile: inputInputFile,
@@ -668,6 +685,7 @@ function main(params: string[], write = mkdirpWrite) {
     stampType,
     strict,
     verbose,
+    quite,
     help,
   } = parseArgs(params);
 
@@ -808,7 +826,7 @@ function main(params: string[], write = mkdirpWrite) {
         const msg = `Unknown asset: ${uri}`;
         if (strict) {
           throw newError(msg);
-        } else {
+        } else if (!(quite && isSourceMap(asset, processedAssets))) {
           warn(msg);
         }
     }

@@ -180,6 +180,42 @@ describe("base", () => {
       ])
     ).not.toThrow();
   });
+
+  it("should warn non --strict and unknown asset types", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      // "--quite",
+      "--assets",
+      "foo.x",
+      "foo.y",
+    ]);
+
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy.calls.argsFor(0)[0]).toContain(`Unknown asset: foo.x`);
+    expect(spy.calls.argsFor(1)[0]).toContain(`Unknown asset: foo.y`);
+  });
+
+  it("should not warn when --quite and sourcemap files for .js files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--assets",
+      "foo.js",
+      "foo.js.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe("--assets", () => {
@@ -711,6 +747,57 @@ describe("--assets", () => {
         '<html><head></head><body><script nomodule="" src="./path/to/my.js"></script><script type="module" src="./path/to/my.mjs"></script></body></html>'
       );
     });
+  });
+
+  it("should not warn when --quite and sourcemap files for .js files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--assets",
+      "foo.js",
+      "foo.js.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--assets",
+      "foo.mjs",
+      "foo.mjs.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("should not warn when --quite and sourcemap files for .css files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--assets",
+      "foo.css",
+      "foo.css.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
@@ -1372,6 +1459,40 @@ describe("--scripts", () => {
       '<html><head></head><body><script src="./a.js"></script><script src="./b.js"></script><script src="./c.js"></script></body></html>'
     );
   });
+
+  it("should not warn when --quite and sourcemap files for .js files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--scripts",
+      "foo.js",
+      "foo.js.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--scripts",
+      "foo.mjs",
+      "foo.mjs.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe("--favicons", () => {
@@ -1761,6 +1882,23 @@ describe("--stylesheets", () => {
     expect(output).toBe(
       '<html><head><link rel="stylesheet" href="./a.css"><link rel="stylesheet" href="./b.css"><link rel="stylesheet" href="./c.css"></head><body></body></html>'
     );
+  });
+
+  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+    const spy = spyOn(console, "warn");
+
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--quite",
+      "--stylesheets",
+      "foo.css",
+      "foo.css.map",
+    ]);
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
