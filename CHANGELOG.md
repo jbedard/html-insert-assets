@@ -1,3 +1,18 @@
+# [0.13.0](https://github.com/jbedard/html-insert-assets/compare/v0.12.2...v0.13.0) (2020-12-13)
+
+
+### Bug Fixes
+
+* **test:** fix bad import of node tsconfig ([16c1e7d](https://github.com/jbedard/html-insert-assets/commit/16c1e7da8afb0070dd0bdc5fad2d49858ce1c287))
+
+
+### Features
+
+* add --help, improve error messaging ([a5e6bb1](https://github.com/jbedard/html-insert-assets/commit/a5e6bb1a80ca613fad2dee2522d2352982ca2a20))
+* add --quite option to ignore known but unnecessary files such as sourcemaps ([94aeecc](https://github.com/jbedard/html-insert-assets/commit/94aeecc37806aba0159aed55bd8c9e100f0c340f))
+
+
+
 ## [0.12.2](https://github.com/jbedard/html-insert-assets/compare/v0.12.1...v0.12.2) (2020-12-12)
 
 
