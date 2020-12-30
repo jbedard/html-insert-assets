@@ -99,22 +99,41 @@ export const enum AssetType {
   UNKNOWN,
 }
 
+export const enum AssetUse {
+  SCRIPT,
+  STYLESHEET,
+  FAVICON,
+  PRELOAD,
+  UNKNOWN,
+}
+
 export type Attributes = { readonly [name: string]: string };
 
 export interface Asset {
   readonly type: AssetType;
+  readonly use: AssetUse;
   readonly uri: string;
   readonly attributes: Attributes;
 }
 
 export interface JsAsset extends Asset {
   readonly type: AssetType.JS | AssetType.MJS;
+  readonly use: AssetUse.SCRIPT | AssetUse.PRELOAD;
   readonly module?: boolean;
 }
 
 function isJsAsset(asset: Asset): asset is JsAsset {
   return asset.type === AssetType.JS || asset.type === AssetType.MJS;
 }
+
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
+const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
+  [AssetType.JS]: "script",
+  [AssetType.MJS]: "script",
+  [AssetType.CSS]: "style",
+  [AssetType.FAVICON]: "image",
+  [AssetType.IMAGE]: "image",
+});
 
 function filenameToExtension(uri: string) {
   const [, ext] = uri.match(EXTERNAL_FILE_TYPE_RE) ||
@@ -135,7 +154,9 @@ function filenameToImageMimeType(uri: string) {
   }
 }
 
-function guessTypeFromFileExt(ext: string) {
+function guessTypeFromFilename(name: string) {
+  const ext = filenameToExtension(name);
+
   switch (ext) {
     case "js":
       return AssetType.JS;
@@ -154,11 +175,10 @@ function guessTypeFromFileExt(ext: string) {
   }
 }
 
-function guessAttributes(uri: string, type: AssetType): Attributes {
-  switch (type) {
-    case AssetType.FAVICON:
+function guessUseAttributes(uri: string, use: AssetUse): Attributes {
+  switch (use) {
+    case AssetUse.FAVICON:
       return {
-        rel: "icon",
         type: filenameToImageMimeType(uri),
       };
 
@@ -167,13 +187,28 @@ function guessAttributes(uri: string, type: AssetType): Attributes {
   }
 }
 
-function guessAssetFromPath(uri: string): Asset {
-  const ext = filenameToExtension(uri) ?? "";
-  const type = guessTypeFromFileExt(ext);
-  const attributes = guessAttributes(uri, type);
+function guessAssetUseFromType(type: AssetType): AssetUse {
+  switch (type) {
+    case AssetType.CSS:
+      return AssetUse.STYLESHEET;
+    case AssetType.JS:
+    case AssetType.MJS:
+      return AssetUse.SCRIPT;
+    case AssetType.FAVICON:
+      return AssetUse.FAVICON;
+    default:
+      return AssetUse.UNKNOWN;
+  }
+}
+
+function guessAssetFromPath(uri: string, knownUse?: AssetUse): Asset {
+  const type = guessTypeFromFilename(uri);
+  const use = knownUse ?? guessAssetUseFromType(type);
+  const attributes = guessUseAttributes(uri, use);
 
   return {
     type,
+    use,
     uri,
     attributes,
   };
@@ -237,9 +272,14 @@ function readOptionalParam(
   return [defaultValue, i - 1];
 }
 
-function readGenericAssets(assets: Asset[], params: string[], i: number) {
+function readGenericAssets(
+  assets: Asset[],
+  params: string[],
+  i: number,
+  knownUse?: AssetUse
+) {
   while (i < params.length && !params[i].startsWith("--")) {
-    assets.push(guessAssetFromPath(params[i++]));
+    assets.push(guessAssetFromPath(params[i++], knownUse));
   }
   return i - 1;
 }
@@ -286,6 +326,7 @@ function readScriptArgs(assets: Asset[], params: string[], i: number) {
 
     const jsAsset: JsAsset = {
       type,
+      use: AssetUse.SCRIPT,
       uri,
       module,
       attributes,
@@ -320,9 +361,9 @@ function readFaviconArgs(assets: Asset[], params: string[], i: number) {
 
     assets.push({
       type: AssetType.FAVICON,
+      use: AssetUse.FAVICON,
       uri,
       attributes: {
-        rel: "icon",
         type: filenameToImageMimeType(uri),
         ...attributes,
       },
@@ -353,30 +394,13 @@ function readStylesheetArgs(assets: Asset[], params: string[], i: number) {
 
     assets.push({
       type: AssetType.CSS,
+      use: AssetUse.STYLESHEET,
       uri,
       attributes,
     });
   } while (i < params.length && !params[++i].startsWith("--"));
 
   return i - 1;
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#What_types_of_content_can_be_preloaded
-const PRELOAD_TYPES = Object.freeze<Partial<{ [type in AssetType]: string }>>({
-  [AssetType.JS]: "script",
-  [AssetType.MJS]: "script",
-  [AssetType.CSS]: "style",
-  [AssetType.FAVICON]: "image",
-  [AssetType.IMAGE]: "image",
-});
-
-function insertPreload({ head }: DOMUtils, uri: string, preloadAs: string) {
-  const link = treeAdapter.createElement("link", "", [
-    { name: "rel", value: "preload" },
-    { name: "href", value: uri },
-    { name: "as", value: preloadAs },
-  ]);
-  treeAdapter.appendChild(head, link);
 }
 
 function parseArgs(cmdParams: string[]) {
@@ -386,9 +410,6 @@ function parseArgs(cmdParams: string[]) {
   // All assets to be inserted into the DOM, of all types.
   // In the order parsed from the CLI.
   const assets: Asset[] = [];
-
-  // All assets to be preloaded
-  const preloadAssets: Asset[] = [];
 
   let rootDirs: string[] = [];
   let verbose = false;
@@ -425,7 +446,7 @@ function parseArgs(cmdParams: string[]) {
         break;
 
       case "--preload":
-        i = readGenericAssets(preloadAssets, params, i + 1);
+        i = readGenericAssets(assets, params, i + 1, AssetUse.PRELOAD);
         break;
 
       case "--strict":
@@ -469,7 +490,6 @@ function parseArgs(cmdParams: string[]) {
     inputFile,
     outputFile,
     assets,
-    preloadAssets,
     rootDirs,
     stampType,
     strict,
@@ -553,25 +573,23 @@ function insertScript({ body }: DOMUtils, url: string, asset: JsAsset) {
   treeAdapter.appendChild(body, script);
 }
 
-function insertCss({ head }: DOMUtils, url: string, attributes: Attributes) {
-  const stylesheet = treeAdapter.createElement("link", "", [
-    { name: "rel", value: "stylesheet" },
-    { name: "href", value: url },
-    ...attributesToParse5(attributes),
-  ]);
-  treeAdapter.appendChild(head, stylesheet);
-}
-
-function insertFavicon(
+function insertLink(
   { head }: DOMUtils,
+  type: string,
   url: string,
   attributes: Attributes
 ) {
-  const icoLink = treeAdapter.createElement("link", "", [
-    ...attributesToParse5(attributes),
-    { name: "href", value: url },
-  ]);
-  treeAdapter.appendChild(head, icoLink);
+  const link = treeAdapter.createElement(
+    "link",
+    "",
+    attributesToParse5({
+      rel: type,
+      href: url,
+      ...attributes,
+    })
+  );
+
+  treeAdapter.appendChild(head, link);
 }
 
 function createLogger(verbose: boolean) {
@@ -677,7 +695,6 @@ function main(params: string[], write = mkdirpWrite) {
     inputFile: inputInputFile,
     outputFile: inputOutputFile,
     assets,
-    preloadAssets,
     rootDirs: inputRootDirs,
     stampType,
     strict,
@@ -714,8 +731,9 @@ function main(params: string[], write = mkdirpWrite) {
   const processedAssets = processAssets(assets);
 
   // Log all assets
-  processedAssets.forEach(({ type, uri }) => log("files (%s): %s", type, uri));
-  preloadAssets.forEach(({ type, uri }) => log("preload (%s): %s", type, uri));
+  processedAssets.forEach(({ type, use, uri }) =>
+    log("files (%s, %s): %s", type, use, uri)
+  );
 
   const document = parse5.parse(
     fs.readFileSync(inputFile, { encoding: "utf-8" }),
@@ -790,37 +808,39 @@ function main(params: string[], write = mkdirpWrite) {
 
   const utils: DOMUtils = { body, head };
 
-  // Insertion of various asset preload types
-  for (const { type, uri } of preloadAssets) {
-    if (PRELOAD_TYPES[type]) {
-      insertPreload(utils, toUrl(uri), PRELOAD_TYPES[type]!);
-    } else if (strict) {
-      throw newError(`Unknown preload type: ${uri}`);
-    }
-  }
-
   // Insertion of various asset types
   for (const asset of processedAssets) {
-    const { type, uri, attributes } = asset;
+    const { type, use, uri, attributes } = asset;
     const url = toUrl(uri);
 
-    switch (type) {
-      case AssetType.JS:
-      case AssetType.MJS:
+    switch (use) {
+      case AssetUse.SCRIPT:
         insertScript(utils, url, asset as JsAsset);
         break;
 
-      case AssetType.CSS:
-        insertCss(utils, url, attributes);
+      case AssetUse.STYLESHEET:
+        insertLink(utils, "stylesheet", url, attributes);
         break;
 
-      case AssetType.FAVICON:
-        insertFavicon(utils, url, attributes);
+      case AssetUse.FAVICON:
+        insertLink(utils, "icon", url, attributes);
+        break;
+
+      case AssetUse.PRELOAD:
+        if (PRELOAD_TYPES[type]) {
+          insertLink(utils, "preload", url, {
+            as: PRELOAD_TYPES[type]!,
+            ...attributes,
+          });
+        } else if (strict) {
+          throw newError(`Unknown preload type: ${url}`);
+        }
+
         break;
 
       default:
         // eslint-disable-next-line no-case-declarations
-        const msg = `Unknown asset: ${uri}`;
+        const msg = `Unknown asset usage: ${uri}`;
         if (strict) {
           throw newError(msg);
         } else if (!(quite && isSourceMap(asset, processedAssets))) {

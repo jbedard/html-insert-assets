@@ -196,8 +196,8 @@ describe("base", () => {
     ]);
 
     expect(spy).toHaveBeenCalledTimes(2);
-    expect(spy.calls.argsFor(0)[0]).toContain(`Unknown asset: foo.x`);
-    expect(spy.calls.argsFor(1)[0]).toContain(`Unknown asset: foo.y`);
+    expect(spy.calls.argsFor(0)[0]).toContain(`Unknown asset usage: foo.x`);
+    expect(spy.calls.argsFor(1)[0]).toContain(`Unknown asset usage: foo.y`);
   });
 
   it("should not warn when --quite and sourcemap files for .js files found", () => {
@@ -641,7 +641,7 @@ describe("--assets", () => {
         "c.ico",
       ]);
       expect(output).toBe(
-        '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="/b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="/b.ico" type="image/ico"><link rel="icon" href="./c.ico" type="image/ico"></head><body></body></html>'
       );
     });
 
@@ -657,7 +657,7 @@ describe("--assets", () => {
         ])
       ).toBe(0);
       expect(output).toBe(
-        '<html><head><link rel="icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" href="./path/to/my.ico" type="image/ico"></head><body></body></html>'
       );
     });
 
@@ -676,7 +676,7 @@ describe("--assets", () => {
         ])
       ).toBe(0);
       expect(output).toBe(
-        '<html><head><link rel="icon" type="image/ico" href="./my.ico"></head><body></body></html>'
+        '<html><head><link rel="icon" href="./my.ico" type="image/ico"></head><body></body></html>'
       );
     });
   });
@@ -1508,7 +1508,7 @@ describe("--favicons", () => {
       "c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="/b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="/b.ico" type="image/ico"><link rel="icon" href="./c.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1524,7 +1524,7 @@ describe("--favicons", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./path/to/my.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./path/to/my.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1543,7 +1543,7 @@ describe("--favicons", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./my.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./my.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1559,7 +1559,7 @@ describe("--favicons", () => {
       "c.svg",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/png" href="/b.png"><link rel="icon" type="image/svg+xml" href="./c.svg"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="/b.png" type="image/png"><link rel="icon" href="./c.svg" type="image/svg+xml"></head><body></body></html>'
     );
   });
 
@@ -1575,7 +1575,7 @@ describe("--favicons", () => {
       "/b.png",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="apple-touch-icon" type="image/ico" href="./a.ico"><link rel="apple-touch-icon" type="image/png" href="/b.png"></head><body></body></html>'
+      '<html><head><link rel="apple-touch-icon" href="./a.ico" type="image/ico"><link rel="apple-touch-icon" href="/b.png" type="image/png"></head><body></body></html>'
     );
   });
 
@@ -1591,7 +1591,7 @@ describe("--favicons", () => {
       "/b.png",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/foo" href="./a.ico"><link rel="icon" type="image/foo" href="/b.png"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/foo"><link rel="icon" href="/b.png" type="image/foo"></head><body></body></html>'
     );
   });
 
@@ -1607,7 +1607,7 @@ describe("--favicons", () => {
       "/b.png",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" sizes="192x192" href="./a.ico"><link rel="icon" type="image/png" sizes="192x192" href="/b.png"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico" sizes="192x192"><link rel="icon" href="/b.png" type="image/png" sizes="192x192"></head><body></body></html>'
     );
   });
 
@@ -1626,7 +1626,7 @@ describe("--favicons", () => {
       "/b.png",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" sizes="192x192" href="./a.ico"><link rel="apple-touch-icon" type="image/png" sizes="123x456" href="/b.png"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico" sizes="192x192"><link rel="apple-touch-icon" href="/b.png" type="image/png" sizes="123x456"></head><body></body></html>'
     );
   });
 
@@ -1642,7 +1642,7 @@ describe("--favicons", () => {
       "./b.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="./b.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1658,7 +1658,7 @@ describe("--favicons", () => {
       "./b.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="./b.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1676,7 +1676,7 @@ describe("--favicons", () => {
       "./c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="./b.ico" type="image/ico"><link rel="icon" href="./c.ico" type="image/ico"></head><body></body></html>'
     );
   });
 
@@ -1694,7 +1694,7 @@ describe("--favicons", () => {
       "./c.ico",
     ]);
     expect(output).toBe(
-      '<html><head><link rel="icon" type="image/ico" href="./a.ico"><link rel="icon" type="image/ico" href="./b.ico"><link rel="icon" type="image/ico" href="./c.ico"></head><body></body></html>'
+      '<html><head><link rel="icon" href="./a.ico" type="image/ico"><link rel="icon" href="./b.ico" type="image/ico"><link rel="icon" href="./c.ico" type="image/ico"></head><body></body></html>'
     );
   });
 });
@@ -1965,7 +1965,7 @@ describe("preloading", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="preload" href="./path/to/my.css" as="style"><link rel="stylesheet" href="./path/to/my.css"></head><body></body></html>'
+      '<html><head><link rel="stylesheet" href="./path/to/my.css"><link rel="preload" href="./path/to/my.css" as="style"></head><body></body></html>'
     );
   });
 
@@ -2116,7 +2116,7 @@ describe("stamping", () => {
       ])
     ).toBe(0);
     expect(output).toBe(
-      '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="icon" type="image/ico" href="./favicon.ico?v=42"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
+      '<html><head><link rel="stylesheet" href="./style.css?v=42"><link rel="icon" href="./favicon.ico?v=42" type="image/ico"></head><body><script src="./script.js?v=42"></script><script type="module" src="./script-module.mjs?v=42"></script></body></html>'
     );
   });
 
@@ -2182,7 +2182,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${__NOW}"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${__NOW}"><link rel="icon" href="./test/data/assets/github.ico?v=${__NOW}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${__NOW}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${__NOW}"></script></body></html>`
     );
   });
 
@@ -2205,7 +2205,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
     );
   });
 
@@ -2228,7 +2228,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${NOW_5_SUBSET}"><link rel="icon" href="./test/data/assets/github.ico?v=${NOW_5_SUBSET}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${NOW_5_SUBSET}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${NOW_5_SUBSET}"></script></body></html>`
     );
   });
 
@@ -2299,7 +2299,7 @@ describe("stamping", () => {
     ).toBe(0);
 
     expect(output).toBe(
-      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH}"></script></body></html>`
+      `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH}"><link rel="icon" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH}"></script></body></html>`
     );
   });
 
@@ -2323,9 +2323,9 @@ describe("stamping", () => {
     expect(output).toBe(
       `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
         -5
-      )}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+      )}"><link rel="icon" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
         -5
-      )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
+      )}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
         -5
       )}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH.slice(
         -5
@@ -2373,9 +2373,9 @@ describe("stamping", () => {
     expect(output).toBe(
       `<html><head><link rel="stylesheet" href="./test/data/assets/reset.css?v=${CSS_ASSET_RESET_HASH.slice(
         -8
-      )}"><link rel="icon" type="image/ico" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
+      )}"><link rel="icon" href="./test/data/assets/github.ico?v=${ICO_ASSET_GITHUB_HASH.slice(
         -8
-      )}"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
+      )}" type="image/ico"></head><body><script src="./test/data/assets/alert.js?v=${JS_ASSET_ALERT_HASH.slice(
         -8
       )}"></script><script type="module" src="./test/data/assets/answer.mjs?v=${MJS_ASSET_ANSWER_HASH.slice(
         -8
@@ -2536,7 +2536,6 @@ describe("parseArgs", () => {
       outputFile: inputOutputFile,
       inputFile: inputInputFile,
       assets,
-      preloadAssets,
       rootDirs: inputRootDirs,
     } = parseArgs([
       "--out",
@@ -2562,8 +2561,12 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets.map(pluckUri)).toEqual(["./a.js", "./b.js"]);
-    expect(preloadAssets.map(pluckUri)).toEqual(["./e.js", "./f.css"]);
+    expect(assets.map(pluckUri)).toEqual([
+      "./a.js",
+      "./b.js",
+      "./e.js",
+      "./f.css",
+    ]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
@@ -2572,7 +2575,6 @@ describe("parseArgs", () => {
       outputFile: inputOutputFile,
       inputFile: inputInputFile,
       assets,
-      preloadAssets,
       rootDirs: inputRootDirs,
     } = parseArgs([
       "--out=./out",
@@ -2593,8 +2595,12 @@ describe("parseArgs", () => {
 
     expect(outputFile).toBe("./out");
     expect(inputFile).toBe("./in");
-    expect(assets.map(pluckUri)).toEqual(["./a.js", "./b.js"]);
-    expect(preloadAssets.map(pluckUri)).toEqual(["./e.js", "./f.css"]);
+    expect(assets.map(pluckUri)).toEqual([
+      "./a.js",
+      "./b.js",
+      "./e.js",
+      "./f.css",
+    ]);
     expect(rootDirs).toEqual(["/c/", "/d/"]);
   });
 
