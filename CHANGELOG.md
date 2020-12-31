@@ -1,3 +1,13 @@
+# [0.14.0](https://github.com/jbedard/html-insert-assets/compare/v0.13.0...v0.14.0) (2020-12-31)
+
+
+### Features
+
+* **cli:** add better handling of invalid params/config ([4337691](https://github.com/jbedard/html-insert-assets/commit/4337691e0a56ca54363a49a250e6cad4666acfda))
+* **manfiest:** add --manifest for specifying PWA manfiest files ([00a9f9f](https://github.com/jbedard/html-insert-assets/commit/00a9f9f2655575ff6b199ea0367246573bd8ef89)), closes [#17](https://github.com/jbedard/html-insert-assets/issues/17)
+
+
+
 # [0.13.0](https://github.com/jbedard/html-insert-assets/compare/v0.12.2...v0.13.0) (2020-12-13)
 
 
