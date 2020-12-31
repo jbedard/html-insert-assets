@@ -18,6 +18,13 @@ const EXTERNAL_FILE_TYPE_RE = /^[a-z]+:\/\/.*\.([a-z]+)(\?.*)?$/i;
 const ES2015_RE = /\.(es2015\.|m)js$/i;
 const NOW = String(Date.now());
 
+// Required + single-use argument restrictions
+function dasherize(a: string[]): readonly string[] {
+  return a.map(s => `--${s}`);
+}
+const SINGLE_USE_ARGS = dasherize(["html", "out", "roots", "stamp"]);
+const REQUIRED_ARGS = dasherize(["html", "out"]);
+
 const HELP_MESSAGE = `
 Basic Configuration:
   --html path                             The HTML template file to insert assets into.
@@ -403,6 +410,21 @@ function readStylesheetArgs(assets: Asset[], params: string[], i: number) {
   return i - 1;
 }
 
+function verifyArguments(args: string[]) {
+  for (const arg of REQUIRED_ARGS) {
+    const idx = args.indexOf(arg);
+    if (idx === -1 || idx >= args.length || args[idx + 1].startsWith("--")) {
+      throw newError(`Required arguments: ${REQUIRED_ARGS.join(", ")}`);
+    }
+  }
+
+  for (const arg of SINGLE_USE_ARGS) {
+    if (args.includes(arg, 1 + args.indexOf(arg))) {
+      throw newError(`Duplicate arg: ${arg}`);
+    }
+  }
+}
+
 function parseArgs(cmdParams: string[]) {
   let inputFile = "";
   let outputFile = "";
@@ -426,6 +448,8 @@ function parseArgs(cmdParams: string[]) {
     }
     return a;
   }, []);
+
+  verifyArguments(params);
 
   for (let i = 0; i < params.length; i++) {
     switch (params[i]) {
@@ -706,10 +730,6 @@ function main(params: string[], write = mkdirpWrite) {
   if (help) {
     console.log(HELP_MESSAGE);
     return 0;
-  }
-
-  if (!inputInputFile || !inputOutputFile) {
-    throw newError("required: --html, --out");
   }
 
   // Normalize fs paths, assets done separately later

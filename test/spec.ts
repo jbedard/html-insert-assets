@@ -2407,31 +2407,76 @@ describe("parseArgs", () => {
     expect(inputFile).toBe("./index.html");
   });
 
-  it("should throw with multiple --out", () => {
+  it("should throw with multiple --out values", () => {
     expect(() =>
       parseArgs(["--html", "validhtml", "--out", "./foo", "./bar"])
     ).toThrowError("Unknown arg: ./bar");
   });
 
-  it("should throw with multiple --html", () => {
+  it("should throw with multiple --out params", () => {
+    expect(() =>
+      parseArgs(["--html", "validhtml", "--out", "./foo", "--out", "./bar"])
+    ).toThrowError("Duplicate arg: --out");
+  });
+
+  it("should throw with multiple --html values", () => {
     expect(() =>
       parseArgs(["--out", "foo", "--html", "./foo", "./bar"])
     ).toThrowError("Unknown arg: ./bar");
   });
 
+  it("should throw with multiple --html params", () => {
+    expect(() =>
+      parseArgs(["--out", "foo", "--html", "./foo", "--html", "./bar"])
+    ).toThrowError("Duplicate arg: --html");
+  });
+
   it("should throw with unknown arg", () => {
-    expect(() => parseArgs(["--badparam"])).toThrowError(
+    expect(() => parseArgs([...REQUIRE_PARAMS, "--badparam"])).toThrowError(
       "Unknown arg: --badparam"
     );
   });
 
-  it("should throw with no --out and --html", () => {
-    expect(() => main(["--out", "out"])).toThrowError(
-      "required: --html, --out"
+  it("should throw with no --out and --html params", () => {
+    expect(() => parseArgs(["--out", "out"])).toThrowError(
+      "Required arguments: --html, --out"
     );
-    expect(() => main(["--html", "in"])).toThrowError(
-      "required: --html, --out"
+    expect(() => parseArgs(["--html", "in"])).toThrowError(
+      "Required arguments: --html, --out"
     );
+    expect(() => parseArgs([])).toThrowError(
+      "Required arguments: --html, --out"
+    );
+  });
+
+  it("should throw when multiple --stamp specified", () => {
+    expect(() =>
+      parseArgs([...REQUIRE_PARAMS, "--stamp", "--stamp"])
+    ).toThrowError("Duplicate arg: --stamp");
+  });
+
+  it("should throw when multiple --stamp with different configs specified", () => {
+    expect(() =>
+      parseArgs([...REQUIRE_PARAMS, "--stamp=none", "--stamp=hash"])
+    ).toThrowError("Duplicate arg: --stamp");
+
+    expect(() =>
+      parseArgs([...REQUIRE_PARAMS, "--stamp", "none", "--stamp=hash"])
+    ).toThrowError("Duplicate arg: --stamp");
+  });
+
+  it("should throw for required args before duplicate args", () => {
+    expect(() => parseArgs(["--stamp", "--stamp"])).toThrowError(
+      "Required arguments: --html, --out"
+    );
+
+    expect(() =>
+      parseArgs(["--stamp", "--html", "foo", "--stamp"])
+    ).toThrowError("Required arguments: --html, --out");
+
+    expect(() =>
+      parseArgs(["--stamp", "--stamp", "--html", "foo"])
+    ).toThrowError("Required arguments: --html, --out");
   });
 
   it("should normalize roots paths", () => {
@@ -2474,6 +2519,12 @@ describe("parseArgs", () => {
     const { rootDirs } = normalizeArgPaths(inputRootDirs, "", "");
 
     expect(rootDirs).toEqual(["./a/", "./b/", "/c/"]);
+  });
+
+  it("should throw when multiple --roots specified", () => {
+    expect(() =>
+      parseArgs([...REQUIRE_PARAMS, "--roots", "a", "--roots", "b"])
+    ).toThrowError("Duplicate arg: --roots");
   });
 
   it("should accept no assets arg", () => {
