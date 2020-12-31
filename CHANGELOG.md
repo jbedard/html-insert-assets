@@ -1,3 +1,12 @@
+## [0.14.1](https://github.com/jbedard/html-insert-assets/compare/v0.14.0...v0.14.1) (2020-12-31)
+
+
+### Bug Fixes
+
+* **cli:** do not throw when using --help ([5e9a991](https://github.com/jbedard/html-insert-assets/commit/5e9a9912c46620db6286f9e3ed4e9943fbc1a940))
+
+
+
 # [0.14.0](https://github.com/jbedard/html-insert-assets/compare/v0.13.0...v0.14.0) (2020-12-31)
 
 
