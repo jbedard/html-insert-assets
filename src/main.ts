@@ -22,7 +22,13 @@ const NOW = String(Date.now());
 function dasherize(a: string[]): readonly string[] {
   return a.map(s => `--${s}`);
 }
-const SINGLE_USE_ARGS = dasherize(["html", "out", "roots", "stamp"]);
+const SINGLE_USE_ARGS = dasherize([
+  "html",
+  "out",
+  "manifest",
+  "roots",
+  "stamp",
+]);
 const REQUIRED_ARGS = dasherize(["html", "out"]);
 
 const HELP_MESSAGE = `
@@ -79,6 +85,8 @@ Assets:
   --preload path [...path]                Add <link rel="preload" type="?"> elements.
                                           The [type] is determined based on the file extension.
 
+  --manifest path                         Add a <link rel="manifest"> element to specify a PWA manifest.
+
   --assets path [...path]                 Generic list of assets. The asset type is determined based on the file extension.
                                           May be specified multiple times to allow configuring asset ordering.
 
@@ -111,6 +119,7 @@ export const enum AssetUse {
   STYLESHEET,
   FAVICON,
   PRELOAD,
+  MANIFEST,
   UNKNOWN,
 }
 
@@ -286,9 +295,13 @@ function readGenericAssets(
   knownUse?: AssetUse
 ) {
   while (i < params.length && !params[i].startsWith("--")) {
-    assets.push(guessAssetFromPath(params[i++], knownUse));
+    readGenericAsset(assets, params[i++], knownUse);
   }
   return i - 1;
+}
+
+function readGenericAsset(assets: Asset[], uri: string, knownUse?: AssetUse) {
+  assets.push(guessAssetFromPath(uri, knownUse));
 }
 
 function readScriptArgs(assets: Asset[], params: string[], i: number) {
@@ -471,6 +484,10 @@ function parseArgs(cmdParams: string[]) {
 
       case "--preload":
         i = readGenericAssets(assets, params, i + 1, AssetUse.PRELOAD);
+        break;
+
+      case "--manifest":
+        readGenericAsset(assets, params[++i], AssetUse.MANIFEST);
         break;
 
       case "--strict":
@@ -844,6 +861,10 @@ function main(params: string[], write = mkdirpWrite) {
 
       case AssetUse.FAVICON:
         insertLink(utils, "icon", url, attributes);
+        break;
+
+      case AssetUse.MANIFEST:
+        insertLink(utils, "manifest", url, attributes);
         break;
 
       case AssetUse.PRELOAD:

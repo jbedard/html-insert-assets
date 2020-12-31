@@ -1902,6 +1902,77 @@ describe("--stylesheets", () => {
   });
 });
 
+describe("--manifest", () => {
+  it("should inject PWA manifest files as manifest link tags", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--manifest",
+        "./manifest.webmanifest",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="manifest" href="./manifest.webmanifest"></head><body></body></html>'
+    );
+  });
+
+  it("should ensure manifest paths start with a absolute or relative indicator", () => {
+    // relative
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--manifest",
+      "./a.json",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="manifest" href="./a.json"></head><body></body></html>'
+    );
+
+    // Absolute
+    mainTest([
+      "--out",
+      "index.html",
+      "--html",
+      inFile,
+      "--manifest",
+      "/b.json",
+    ]);
+    expect(output).toBe(
+      '<html><head><link rel="manifest" href="/b.json"></head><body></body></html>'
+    );
+
+    // No prefix => relative
+    mainTest(["--out", "index.html", "--html", inFile, "--manifest", "c.json"]);
+    expect(output).toBe(
+      '<html><head><link rel="manifest" href="./c.json"></head><body></body></html>'
+    );
+  });
+
+  it("should strip the longest matching prefix for manifest files", () => {
+    expect(
+      mainTest([
+        "--out",
+        "index.html",
+        "--html",
+        inFile,
+        "--roots",
+        "path",
+        "path/to",
+        "--manifest",
+        "path/to/manifest.json",
+      ])
+    ).toBe(0);
+    expect(output).toBe(
+      '<html><head><link rel="manifest" href="./manifest.json"></head><body></body></html>'
+    );
+  });
+});
+
 describe("preloading", () => {
   it("should support preload type=script (js)", () => {
     expect(
@@ -2447,6 +2518,18 @@ describe("parseArgs", () => {
     expect(() => parseArgs([])).toThrowError(
       "Required arguments: --html, --out"
     );
+  });
+
+  it("should throw when multiple --manifest specified", () => {
+    expect(() =>
+      parseArgs([
+        ...REQUIRE_PARAMS,
+        "--manifest",
+        "a.json",
+        "--manifest",
+        "b.json",
+      ])
+    ).toThrowError("Duplicate arg: --manifest");
   });
 
   it("should throw when multiple --stamp specified", () => {
