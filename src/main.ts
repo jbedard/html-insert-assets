@@ -531,10 +531,7 @@ function processAssets(assets: Asset[]): Asset[] {
 }
 
 function attributesToParse5(attributes: Attributes): parse5.Attribute[] {
-  return Object.keys(attributes).map(key => ({
-    name: key,
-    value: attributes[key],
-  }));
+  return Object.entries(attributes).map(([name, value]) => ({ name, value }));
 }
 
 function insertScript({ body }: DOMUtils, url: string, asset: JsAsset) {
