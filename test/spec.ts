@@ -2520,6 +2520,12 @@ describe("parseArgs", () => {
     );
   });
 
+  it("should not throw when --help specified", () => {
+    expect(parseArgs(["--help"]).help).toBeTrue();
+    expect(parseArgs(["--help", "--out", "out"]).help).toBeTrue();
+    expect(parseArgs(["--help", "--html", "in"]).help).toBeTrue();
+  });
+
   it("should throw when multiple --manifest specified", () => {
     expect(() =>
       parseArgs([

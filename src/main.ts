@@ -424,6 +424,10 @@ function readStylesheetArgs(assets: Asset[], params: string[], i: number) {
 }
 
 function verifyArguments(args: string[]) {
+  if (args.includes("--help")) {
+    return;
+  }
+
   for (const arg of REQUIRED_ARGS) {
     const idx = args.indexOf(arg);
     if (idx === -1 || idx >= args.length || args[idx + 1].startsWith("--")) {
