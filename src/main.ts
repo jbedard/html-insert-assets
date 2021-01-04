@@ -94,7 +94,7 @@ Assets:
 
 Miscellaneous:
   --verbose                               Output more logging information.
-  --quite                                 Surpress some logging + warnings about unnecessary assets being passed such as
+  --quiet                                 Surpress some logging + warnings about unnecessary assets being passed such as
                                           sourcemap files alongside known files.
   --strict                                Fail on warnings instead of logging to stderr.
   --help                                  Show this help message.
@@ -453,7 +453,7 @@ function parseArgs(cmdParams: string[]) {
   let rootDirs: string[] = [];
   let verbose = false;
   let strict = false;
-  let quite = false;
+  let quiet = false;
   let help = false;
   let stampType = "hash=8";
 
@@ -498,8 +498,8 @@ function parseArgs(cmdParams: string[]) {
         strict = true;
         break;
 
-      case "--quite":
-        quite = true;
+      case "--quiet":
+        quiet = true;
         break;
 
       case "--roots":
@@ -538,7 +538,7 @@ function parseArgs(cmdParams: string[]) {
     rootDirs,
     stampType,
     strict,
-    quite,
+    quiet,
     verbose,
     help,
   };
@@ -744,7 +744,7 @@ function main(params: string[], write = mkdirpWrite) {
     stampType,
     strict,
     verbose,
-    quite,
+    quiet,
     help,
   } = parseArgs(params);
 
@@ -888,7 +888,7 @@ function main(params: string[], write = mkdirpWrite) {
         const msg = `Unknown asset usage: ${uri}`;
         if (strict) {
           throw newError(msg);
-        } else if (!(quite && isSourceMap(asset, processedAssets))) {
+        } else if (!(quiet && isSourceMap(asset, processedAssets))) {
           warn(msg);
         }
     }

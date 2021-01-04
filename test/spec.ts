@@ -189,7 +189,7 @@ describe("base", () => {
       "index.html",
       "--html",
       inFile,
-      // "--quite",
+      // "--quiet",
       "--assets",
       "foo.x",
       "foo.y",
@@ -200,7 +200,7 @@ describe("base", () => {
     expect(spy.calls.argsFor(1)[0]).toContain(`Unknown asset usage: foo.y`);
   });
 
-  it("should not warn when --quite and sourcemap files for .js files found", () => {
+  it("should not warn when --quiet and sourcemap files for .js files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -208,7 +208,7 @@ describe("base", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--assets",
       "foo.js",
       "foo.js.map",
@@ -749,7 +749,7 @@ describe("--assets", () => {
     });
   });
 
-  it("should not warn when --quite and sourcemap files for .js files found", () => {
+  it("should not warn when --quiet and sourcemap files for .js files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -757,7 +757,7 @@ describe("--assets", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--assets",
       "foo.js",
       "foo.js.map",
@@ -766,7 +766,7 @@ describe("--assets", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+  it("should not warn when --quiet and sourcemap files for .mjs files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -774,7 +774,7 @@ describe("--assets", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--assets",
       "foo.mjs",
       "foo.mjs.map",
@@ -783,7 +783,7 @@ describe("--assets", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("should not warn when --quite and sourcemap files for .css files found", () => {
+  it("should not warn when --quiet and sourcemap files for .css files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -791,7 +791,7 @@ describe("--assets", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--assets",
       "foo.css",
       "foo.css.map",
@@ -1460,7 +1460,7 @@ describe("--scripts", () => {
     );
   });
 
-  it("should not warn when --quite and sourcemap files for .js files found", () => {
+  it("should not warn when --quiet and sourcemap files for .js files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -1468,7 +1468,7 @@ describe("--scripts", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--scripts",
       "foo.js",
       "foo.js.map",
@@ -1477,7 +1477,7 @@ describe("--scripts", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+  it("should not warn when --quiet and sourcemap files for .mjs files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -1485,7 +1485,7 @@ describe("--scripts", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--scripts",
       "foo.mjs",
       "foo.mjs.map",
@@ -1884,7 +1884,7 @@ describe("--stylesheets", () => {
     );
   });
 
-  it("should not warn when --quite and sourcemap files for .mjs files found", () => {
+  it("should not warn when --quiet and sourcemap files for .mjs files found", () => {
     const spy = spyOn(console, "warn");
 
     mainTest([
@@ -1892,7 +1892,7 @@ describe("--stylesheets", () => {
       "index.html",
       "--html",
       inFile,
-      "--quite",
+      "--quiet",
       "--stylesheets",
       "foo.css",
       "foo.css.map",

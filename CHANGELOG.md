@@ -28,7 +28,7 @@
 ### Features
 
 * add --help, improve error messaging ([a5e6bb1](https://github.com/jbedard/html-insert-assets/commit/a5e6bb1a80ca613fad2dee2522d2352982ca2a20))
-* add --quite option to ignore known but unnecessary files such as sourcemaps ([94aeecc](https://github.com/jbedard/html-insert-assets/commit/94aeecc37806aba0159aed55bd8c9e100f0c340f))
+* add --quiet option to ignore known but unnecessary files such as sourcemaps ([94aeecc](https://github.com/jbedard/html-insert-assets/commit/94aeecc37806aba0159aed55bd8c9e100f0c340f))
 
 
 
