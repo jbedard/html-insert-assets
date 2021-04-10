@@ -173,7 +173,7 @@ Root asset directories to trim and convert to URLs relative to the the `--out` d
     html-insert-assets
         --html ./index.tmpl.html
         --out ./index.html
-        --root .
+        --roots .
         --scripts ./a.js b.js sub/c.js
 ```
 
@@ -191,7 +191,7 @@ Root directories of assets (multiple):
     html-insert-assets
         --html ./index.tmpl.html
         --out ./index.html
-        --root sub /abs/path
+        --roots sub /abs/path
         --scripts /abs/path/a.js b.js sub/c.js
 ```
 
@@ -209,7 +209,7 @@ Root directories of assets (multiple + alternate --out):
     html-insert-assets
         --html ./index.tmpl.html
         --out ./out/index.html
-        --root sub /abs/path
+        --roots sub /abs/path
         --scripts /abs/path/a.js b.js sub/c.js
 ```
 
@@ -227,7 +227,7 @@ Absolute paths outside any root directories:
     html-insert-assets
         --html ./index.tmpl.html
         --out sub/index.html
-        --root sub /abs/path
+        --roots sub /abs/path
         --scripts /path/to/my.js
 ```
 
