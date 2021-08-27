@@ -2463,10 +2463,8 @@ describe("parseArgs", () => {
   }
 
   it("should accept a single --out and --html", () => {
-    const {
-      outputFile: inputOutputFile,
-      inputFile: inputInputFile,
-    } = parseArgs(["--out", "./foo.html", "--html", "index.html"]);
+    const { outputFile: inputOutputFile, inputFile: inputInputFile } =
+      parseArgs(["--out", "./foo.html", "--html", "index.html"]);
 
     const { inputFile, outputFile } = normalizeArgPaths(
       [],

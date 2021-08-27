@@ -236,7 +236,7 @@ function findElementByName(d: Node, name: string): Node | undefined {
   }
 
   for (const f of treeAdapter.getChildNodes(d) || []) {
-    const result = findElementByName(f, name);
+    const result = findElementByName(f as Node, name);
     if (result) return result;
   }
 
