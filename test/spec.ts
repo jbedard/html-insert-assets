@@ -10,6 +10,7 @@ import {
 
 const inFile = "./test/data/index-template.html";
 const inFileHTML5 = "./test/data/index-html5-template.html";
+const inFileSubdir = "./test/data/subdir/index-template.html";
 
 const JS_ASSET_ALERT = "./test/data/assets/alert.js";
 const JS_ASSET_ALERT_HASH = "6yOVKodXSr6FwCnpf6HWhXZl2w"; // original: "6yOVKod/XSr6FwCnpf6HWhXZl2w=";
@@ -352,6 +353,24 @@ describe("--assets", () => {
         ])
       ).toBe(0);
       expect(output).toBe(scriptHtml("../path/to/my.js"));
+    });
+
+    it("should inject relative .js as script with absolute path when output subdir and --roots includes subdir", () => {
+      expect(
+        mainTest([
+          "--html",
+          process.cwd() + "/" + inFileSubdir,
+          "--out",
+          process.cwd() + "/out-sub/index.html",
+          "--roots",
+          ".",
+          process.cwd() + "/out-sub",
+          "/abs/src",
+          "--scripts",
+          "bundle/main.js",
+        ])
+      ).toBe(0);
+      expect(output).toBe(scriptHtml("./bundle/main.js"));
     });
 
     it("should inject relative .js as script with path relative with absolute --out also as a root", () => {
