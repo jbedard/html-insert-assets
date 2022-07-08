@@ -763,7 +763,9 @@ function main(params: string[], write = mkdirpWrite) {
   const log = createLogger(verbose);
   const stamper = createStamper(stampType);
 
-  // Log the parsed params
+  // Log the env and parsed params
+  log("argv: %s", JSON.stringify(params, null, 2));
+  log("cwd: %s", process.cwd());
   log("in: %s", inputFile);
   log("out: %s", outputFile);
   log("roots: %s", rootDirs);
